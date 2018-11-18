@@ -1,0 +1,35 @@
+<resources>
+    <string name="app_name">Bikepack</string>
+
+    <string name="preferences_map_type">map_type</string>
+
+    <string name="title_activity_home">My routes</string>
+    <string name="title_activity_route_map">Route map</string>
+    <string name="title_activity_route_info">Route info</string>
+
+    <string name="routes_mime_types">application/*</string>
+    <string name="route_extra">route</string>
+
+    <string name="route_deleted">Route deleted</string>
+    <string name="route_created">Route created</string>
+    <string name="route_creation_failed">Failed to create route</string>
+
+    <string name="map_layer_dialog_title">"Select map layer"</string>
+
+    <string name="route_delete_dialog_title">"Delete this route?"</string>
+    <string name="route_delete_dialog_message">"This route will be permantently removed from your library."</string>
+
+    <string name="route_edit_dialog_title">"Edit route"</string>
+
+    <string name="dialog_ok">"OK"</string>
+    <string name="dialog_cancel">"CANCEL"</string>
+
+    <string name="menu_sort">"Sort"</string>
+    <string name="menu_filter">"Filter"</string>
+    <string name="menu_edit">"Edit"</string>
+    <string name="menu_delete">"Delete"</string>
+    <string name="menu_save">"Save"</string>
+    <string name="menu_show_map">"Show map"</string>
+    <string name="menu_map_layers">"Map layers"</string>
+    <string name="menu_toggle_elevation">"Toggle elevation"</string>
+</resources>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="ElevationCanvas">
+        <attr name="line_color" format="color" />
+        <attr name="line_width" format="integer" />
+        <attr name="guide_color" format="color" />
+        <attr name="guide_width" format="integer" />
+        <attr name="num_guides" format="integer" />
+    </declare-styleable>
+
+    <declare-styleable name="ElevationView">
+        <attr name="vibrate" format="boolean" />
+    </declare-styleable>
+</resources>
