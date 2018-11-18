@@ -3,8 +3,8 @@ package bikepack.bikepack;
 import android.app.AlertDialog;
 import android.arch.persistence.room.Room;
 import android.content.Intent;
-import android.databinding.DataBindingUtil;
 import android.net.Uri;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -14,12 +14,11 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
+import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-
-import bikepack.bikepack.databinding.RouteListActivityBinding;
 
 public class RouteListActivity extends AppCompatActivity
 {
@@ -27,22 +26,17 @@ public class RouteListActivity extends AppCompatActivity
     private static final String LOG_TAG = "RouteListActivity";
 
     AppDatabase database;
-    AppRepository repository;
     RouteAdapter routesAdapter;
-    RouteListActivityBinding binding;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-
-        binding = DataBindingUtil.setContentView(this, R.layout.route_list_activity );
+        setContentView( R.layout.route_list_activity );
 
         database = Room.databaseBuilder(this, AppDatabase.class, AppDatabase.DB_NAME)
                 .fallbackToDestructiveMigration()
                 .build();
-
-        repository = new AppRepository(database);
     }
 
     @Override
@@ -59,11 +53,11 @@ public class RouteListActivity extends AppCompatActivity
         switch (item.getItemId())
         {
             case R.id.action_sort: {
-                routesAdapter.sort(new Comparator<Route>() {
+                routesAdapter.sort(new Comparator<Route>()
+                {
                     @Override
                     public int compare(Route route1, Route route2) {
-                        if ( route1.totalDistance < route2.totalDistance) return -1;
-                        return 1;
+                    return ( route1.totalDistance < route2.totalDistance ? -1 : +1 );
                     }
                 });
                 return true;
@@ -78,10 +72,25 @@ public class RouteListActivity extends AppCompatActivity
     {
         super.onStart();
 
-        routesAdapter = new RouteAdapter( getApplicationContext(), repository.getRoutes() );
+        routesAdapter = new RouteAdapter( getApplicationContext(), new ArrayList<Route>() );
 
-        binding.routesList.setAdapter(routesAdapter);
-        binding.routesList.setOnItemClickListener( new ListView.OnItemClickListener()
+        new GetRoutesQuery(database, new GetRoutesQuery.Listener()
+        {
+            @Override
+            public void onRoutesReceived(List<Route> routes) {
+                routesAdapter.addAll(routes);
+            }
+
+            @Override
+            public void onGetRoutesError(String errorMessage) {
+                Log.e( LOG_TAG, errorMessage );
+                showErrorMessage( getString(R.string.route_loading_failed), errorMessage );
+            }
+        }).execute();
+
+        ListView routeList = findViewById(R.id.route_list);
+        routeList.setAdapter(routesAdapter);
+        routeList.setOnItemClickListener( new ListView.OnItemClickListener()
         {
             @Override
             public void onItemClick( AdapterView<?> list, View view, int position, long id )
@@ -93,7 +102,8 @@ public class RouteListActivity extends AppCompatActivity
             }
         });
 
-        binding.addButton.setOnClickListener(new View.OnClickListener()
+        FloatingActionButton addButton = findViewById(R.id.add_button);
+        addButton.setOnClickListener(new View.OnClickListener()
         {
             public void onClick(View v)
             {
@@ -110,58 +120,79 @@ public class RouteListActivity extends AppCompatActivity
     {
         if (request_code == ACTION_SELECT_ROUTE_FILE && result_code == RESULT_OK )
         {
-            binding.layout.setEnabled(false);
-            binding.progressBar.setVisibility(View.VISIBLE);
-
-            Uri routeUri = intent.getData();
-            Metadata metadata=null;
-            List<GlobalPosition> trackpoints = new ArrayList<>();
-            //List<XmlUtils.XmlObject> xml_waypoints;
-
-            try
-            {
-                XmlUtils.XmlObject metadataXml = XmlUtils.readFirst( getContentResolver(), routeUri, Metadata.GPX_TAG);
-                if ( metadataXml == null ) throw new NoSuchFieldException("File has no route metadata");
-                metadata = Metadata.buildFromXml(metadataXml);
-
-                List<XmlUtils.XmlObject> trackpointsXml = XmlUtils.readAll( getContentResolver(), routeUri, Trackpoint.GPX_TAG);
-                if ( trackpointsXml.isEmpty() ) throw new Exception("Route has no trackpoints");
-
-                for (int i = 0; i < trackpointsXml.size(); ++i)
-                    trackpoints.add( GlobalPosition.buildFromXml( trackpointsXml.get(i) ) );
-
-                //xml_waypoints = XmlUtils.readAll( getContentResolver(), routeUri, Waypoint.GPX_TAG);
-            }
-            catch( Exception e )
-            {
-                Log.e( LOG_TAG, "Failed to read GPX file, error=" + e.getMessage() );
-                return;
-            }
-
-            repository.createRoute( metadata, trackpoints, new AppRepository.CreateRouteListener()
-            {
-                public void onRouteCreated(Route route)
-                {
-                    binding.layout.setEnabled(true);
-                    binding.progressBar.setVisibility(View.GONE);
-                    routesAdapter.add(route);
-                }
-                public void onError( String error_message )
-                {
-                    Log.e( LOG_TAG, "Failed to create route, error=" + error_message );
-
-                    binding.layout.setEnabled(true);
-                    binding.progressBar.setVisibility(View.GONE);
-
-                    AlertDialog.Builder builder = new AlertDialog.Builder(RouteListActivity.this);
-                    builder.setTitle(R.string.route_creation_failed);
-                    builder.setMessage(error_message);
-                    builder.setPositiveButton(R.string.dialog_ok, null );
-
-                    AlertDialog alertDialog = builder.create();
-                    alertDialog.show();
-                }
-            });
+            final Uri routeUri = intent.getData();
+            if (routeUri == null ) Log.w( LOG_TAG, "invalid file URI" );
+            else importRoute(routeUri);
         }
+    }
+
+    private void importRoute( Uri routeUri )
+    {
+        View progressDialogView = getLayoutInflater().inflate(R.layout.progress_dialog, null );
+
+        AlertDialog.Builder progressBuilder = new AlertDialog.Builder(this)
+                .setTitle(R.string.route_import_dialog_title)
+                .setNegativeButton( R.string.dialog_cancel, null )
+                .setView(progressDialogView);
+
+        final AlertDialog progressDialog = progressBuilder.create();
+        progressDialog.show();
+
+        final TextView progressMessage = progressDialogView.findViewById(R.id.progress_message);
+        progressMessage.setText( getString(R.string.route_import_dialog_parse_gpx) );
+
+        GPXFileParser gpxFileParser = new GPXFileParser(getContentResolver(), routeUri, new GPXFileParser.Listener()
+        {
+            @Override
+            public void onGpxFileRead( Metadata metadata, List<GlobalPosition> trackpoints )
+            {
+                progressMessage.setText( getString(R.string.route_import_dialog_write_db) );
+
+                CreateRouteQuery createRouteTask = new CreateRouteQuery( database, metadata, trackpoints, new CreateRouteQuery.Listener()
+                {
+                    public void onRouteCreated(Route route)
+                    {
+                        progressDialog.dismiss();
+                        routesAdapter.add(route);
+                    }
+
+                    public void onCreateRouteError( String errorMessage )
+                    {
+                        progressDialog.dismiss();
+                        showErrorMessage( getString(R.string.route_creation_failed), errorMessage );
+                    }
+                });
+
+                createRouteTask.execute();
+            }
+
+            @Override
+            public void onGpxReadError( String errorMessage )
+            {
+                progressDialog.dismiss();
+                showErrorMessage( getString(R.string.route_creation_failed), errorMessage );
+            }
+
+            @Override
+            public void onGpxReadCancelled()
+            {
+                progressDialog.dismiss();
+            }
+        });
+
+        gpxFileParser.execute();
+    }
+
+    private void showErrorMessage( String title, String message )
+    {
+        Log.e( LOG_TAG, message );
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(title);
+        builder.setMessage(message);
+        builder.setPositiveButton(R.string.dialog_ok, null );
+
+        AlertDialog alertDialog = builder.create();
+        alertDialog.show();
     }
 }

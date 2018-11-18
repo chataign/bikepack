@@ -24,9 +24,8 @@ public class RouteInfoActivity extends AppCompatActivity
 {
     static final private String LOG_TAG = "RouteInfoActivity";
 
-    private AppRepository repository;
+    private AppDatabase database;
     private RouteInfoActivityBinding binding;
-
     private Route route=null;
 
     @Override
@@ -35,10 +34,8 @@ public class RouteInfoActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
         binding = DataBindingUtil.setContentView( this, R.layout.route_info_activity );
 
-        AppDatabase database = Room.databaseBuilder(this, AppDatabase.class, AppDatabase.DB_NAME)
-                .fallbackToDestructiveMigration().build();
-
-        repository = new AppRepository(database);
+        database = Room.databaseBuilder(this, AppDatabase.class, AppDatabase.DB_NAME)
+            .fallbackToDestructiveMigration().build();
     }
 
     @Override
@@ -82,20 +79,20 @@ public class RouteInfoActivity extends AppCompatActivity
         String date_added = new SimpleDateFormat("dd/MM/yy").format(route.dateAdded);
         String date_created = new SimpleDateFormat("dd/MM/yy").format(route.dateCreated);
 
-        List<RouteInfoItem> info_items = new ArrayList<>();
+        List<RouteInfoItem> infoItems = new ArrayList<>();
 
-        info_items.add( new RouteInfoItem( "Total distance", total_distance, R.drawable.ic_distance_black_24px ) );
-        info_items.add( new RouteInfoItem( "Date created", date_created, R.drawable.ic_date_black_24px) );
-        info_items.add( new RouteInfoItem( "Total ascent", total_ascent, R.drawable.ic_ascent_black_24px) );
-        info_items.add( new RouteInfoItem( "Total descent", total_descent, R.drawable.ic_descent_black_24px) );
-        info_items.add( new RouteInfoItem( "Highest elevation", highest_elevation, R.drawable.ic_elevation_top_black_24px ) );
-        info_items.add( new RouteInfoItem( "Lowest elevation", lowest_elevation, R.drawable.ic_elevation_bottom_black_24px ) );
+        infoItems.add( new RouteInfoItem( "Total distance", total_distance, R.drawable.ic_distance_black_24px ) );
+        infoItems.add( new RouteInfoItem( "Date created", date_created, R.drawable.ic_date_black_24px) );
+        infoItems.add( new RouteInfoItem( "Total ascent", total_ascent, R.drawable.ic_ascent_black_24px) );
+        infoItems.add( new RouteInfoItem( "Total descent", total_descent, R.drawable.ic_descent_black_24px) );
+        infoItems.add( new RouteInfoItem( "Highest elevation", highest_elevation, R.drawable.ic_elevation_top_black_24px ) );
+        infoItems.add( new RouteInfoItem( "Lowest elevation", lowest_elevation, R.drawable.ic_elevation_bottom_black_24px ) );
 
         binding.name.setText(route.routeName);
         binding.author.setText(route.authorName);
         binding.grid.removeAllViews();
 
-        for ( RouteInfoItem info_item : info_items )
+        for ( RouteInfoItem info_item : infoItems )
             binding.grid.addView( info_item.getView( getLayoutInflater() ) );
     }
 
@@ -125,7 +122,18 @@ public class RouteInfoActivity extends AppCompatActivity
                 builder.setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) {
                         dialog.dismiss();
-                        repository.deleteRoute(route);
+                        new DeleteRouteQuery(database, route, new DeleteRouteQuery.Listener() {
+                            @Override
+                            public void onRouteDeleted() {
+
+                            }
+
+                            @Override
+                            public void onDeleteRouteError(String errorMessage) {
+
+                            }
+                        }).execute();
+
                         RouteInfoActivity.this.finish();
                     }
                 });
@@ -158,8 +166,17 @@ public class RouteInfoActivity extends AppCompatActivity
                         String routeName  = routeEditor.name.getText().toString();
                         String authorName = routeEditor.author.getText().toString();
                         String authorLink = routeEditor.authorLink.getText().toString();
-                        Route updated = repository.updateRoute( route.routeId, routeName, authorName, authorLink );
-                        onRouteReceived(updated);
+                        new UpdateRouteQuery(database, route.routeId, routeName, authorName, authorLink, new UpdateRouteQuery.Listener() {
+                            @Override
+                            public void onRouteUpdated(Route updatedRoute) {
+                                onRouteReceived(updatedRoute);
+                            }
+
+                            @Override
+                            public void onUpdateRouteError(String errorMessage) {
+                                Log.e( LOG_TAG, errorMessage );
+                            }
+                        }).execute();
                     }
                 });
                 builder.setNegativeButton( R.string.dialog_cancel, null );

@@ -20,7 +20,6 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -44,7 +43,7 @@ public class RouteMapActivity extends AppCompatActivity
     implements OnMapReadyCallback,
         GoogleMap.OnMapLoadedCallback,
         ElevationView.Listener,
-        AppRepository.RouteDataListener
+        GetRouteDataQuery.Listener
 {
     private static final String LOG_TAG = "MapActivity";
     private static final String MAP_VIEW_BUNDLE_KEY = "MAP_VIEW_BUNDLE_KEY";
@@ -59,7 +58,7 @@ public class RouteMapActivity extends AppCompatActivity
     private List<Trackpoint> trackpoints=null;
     private SharedPreferences preferences;
 
-    private AppRepository repository;
+    private AppDatabase database;
     private RouteMapActivityBinding ui;
 
     @Override
@@ -69,10 +68,9 @@ public class RouteMapActivity extends AppCompatActivity
 
         super.onCreate(savedInstanceState);
 
-        AppDatabase database = Room.databaseBuilder(
+        this.database = Room.databaseBuilder(
                 this, AppDatabase.class, AppDatabase.DB_NAME).build();
 
-        repository = new AppRepository(database);
         preferences = getPreferences(Context.MODE_PRIVATE);
         ui = DataBindingUtil.setContentView(this, R.layout.route_map_activity);
 
@@ -111,6 +109,12 @@ public class RouteMapActivity extends AppCompatActivity
     }
 
     @Override
+    public void onRouteDataError( String errorMessage )
+    {
+        Log.e( LOG_TAG, errorMessage );
+    }
+
+    @Override
     public void onMapReady(GoogleMap map)
     {
         Log.i( LOG_TAG, "onMapReady" );
@@ -144,7 +148,8 @@ public class RouteMapActivity extends AppCompatActivity
         route = intent.getParcelableExtra( getString(R.string.route_extra) );
         if ( route == null ) this.finish();
 
-        repository.getRouteData(route.routeId, this);
+        GetRouteDataQuery task = new GetRouteDataQuery( database, route.routeId, this );
+        task.execute();
     }
 
     @Override
@@ -256,21 +261,22 @@ public class RouteMapActivity extends AppCompatActivity
                 for ( Trackpoint trackpoint : selection ) positions.add(
                         new GlobalPosition( trackpoint.latitude, trackpoint.longitude, trackpoint.elevation ) );
 
-                repository.createRoute(metadata, positions, new AppRepository.CreateRouteListener() {
-                    @Override
+                /*
+                AppRepository.CreateRouteTask createRouteTask = new AppRepository.CreateRouteTask( database, metadata, positions, new AppRepository.CreateRouteListener() {
                     public void onRouteCreated(Route route) {
                         Toast toast = Toast.makeText( RouteMapActivity.this,
                                 R.string.route_created, Toast.LENGTH_SHORT );
                         toast.show();
                     }
-
-                    @Override
                     public void onError(String error_message) {
                         Toast toast = Toast.makeText( RouteMapActivity.this,
                                 R.string.route_creation_failed, Toast.LENGTH_SHORT );
                         toast.show();
                     }
                 });
+
+                createRouteTask.execute();
+                 */
             }
         })
             .setNegativeButton( R.string.dialog_cancel, null );
