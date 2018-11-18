@@ -12,9 +12,14 @@
 
     <string name="route_deleted">Route deleted</string>
     <string name="route_created">Route created</string>
+    <string name="route_loading_failed">Failed to load routes</string>
     <string name="route_creation_failed">Failed to create route</string>
 
     <string name="map_layer_dialog_title">"Select map layer"</string>
+
+    <string name="route_import_dialog_title">"Importing route"</string>
+    <string name="route_import_dialog_parse_gpx">"Parsing GPX file..."</string>
+    <string name="route_import_dialog_write_db">"Writing to database..."</string>
 
     <string name="route_delete_dialog_title">"Delete this route?"</string>
     <string name="route_delete_dialog_message">"This route will be permantently removed from your library."</string>
