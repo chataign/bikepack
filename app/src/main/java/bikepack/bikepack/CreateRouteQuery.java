@@ -4,8 +4,6 @@ import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
-import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
 
 class CreateRouteQuery extends AsyncTask< Void, Void, Route >
@@ -20,18 +18,21 @@ class CreateRouteQuery extends AsyncTask< Void, Void, Route >
 
     private final AppDatabase database;
     private final Metadata metadata;
-    private final List<GlobalPosition> positions;
+    private final List<GlobalPosition> trackpoints;
+    private final List<NamedGlobalPosition> waypoints;
     private final Listener listener;
     private Exception error = null;
 
     CreateRouteQuery(@NonNull AppDatabase database,
                      @NonNull Metadata metadata,
-                     @NonNull List<GlobalPosition> positions,
+                     @NonNull List<GlobalPosition> trackpoints,
+                     @NonNull List<NamedGlobalPosition> waypoints,
                      @NonNull Listener listener )
     {
         this.database = database;
         this.metadata = metadata;
-        this.positions = positions;
+        this.trackpoints = trackpoints;
+        this.waypoints = waypoints;
         this.listener = listener;
     }
 
@@ -44,61 +45,22 @@ class CreateRouteQuery extends AsyncTask< Void, Void, Route >
             Route existingRoute = database.routes().find( metadata.routeName, metadata.authorName );
             if ( existingRoute != null ) throw new Exception("Route already exists");
 
-            //List<XmlUtils.XmlObject> xml_waypoints = XmlUtils.readAll( content_resolver, route_uri, Waypoint.GPX_TAG);
-
-            float totalDistance=0, totalAscent=0, totalDescent=0, highestElevation=0, lowestElevation=1e6f;
-
-            for ( int i=1; i< positions.size(); ++i )
-            {
-                GlobalPosition prev = positions.get(i-1);
-                GlobalPosition curr = positions.get(i);
-
-                lowestElevation = Math.min( lowestElevation, curr.elevation );
-                highestElevation = Math.max( highestElevation, curr.elevation );
-
-                double elevationDiff = curr.elevation - prev.elevation;
-                if ( elevationDiff > 0 ) totalAscent += elevationDiff;
-                else totalDescent += Math.abs(elevationDiff);
-
-                totalDistance += GlobalPosition.distance( prev, curr );
-            }
-
-            Date dateAdded = Calendar.getInstance().getTime();
-
-            Route route = new Route(
-                    metadata.routeName,
-                    metadata.authorName,
-                    metadata.authorLink,
-                    metadata.dateCreated,
-                    dateAdded,
-                    totalDistance,
-                    totalAscent,
-                    totalDescent,
-                    highestElevation,
-                    lowestElevation,
-                    positions.size(),
-                    0 );
-
-            if ( route == null ) throw new Exception("Failed to create route");
+            Route route = Route.buildFromData(metadata,trackpoints,waypoints);
             route.routeId = (int) database.routes().insert(route);
 
-            Trackpoint trackpoints[] = new Trackpoint[positions.size()];
+            Trackpoint dbTrackpoints[] = new Trackpoint[trackpoints.size()];
+            for (int i = 0; i < dbTrackpoints.length; ++i)
+                dbTrackpoints[i] = new Trackpoint( trackpoints.get(i), route.routeId );
 
-            for (int i = 0; i < trackpoints.length; ++i)
-                trackpoints[i] = new Trackpoint( positions.get(i), route.routeId );
+            Log.i("CreateRouteQuery", String.format("inserting %d trackpoints...", trackpoints.size()));
+            database.trackpoints().insert(dbTrackpoints);
 
-            Log.i("CreateRouteQuery", String.format("inserting %d trackpoints...", positions.size()));
-            database.trackpoints().insert(trackpoints);
+            Waypoint dbWaypoints[] = new Waypoint[waypoints.size()];
+            for (int i = 0; i < dbWaypoints.length; ++i)
+                dbWaypoints[i] = new Waypoint( waypoints.get(i), route.routeId );
 
-                /*
-                Waypoint waypoints[] = new Waypoint[xml_waypoints.size()];
-
-                for (int i = 0; i < xml_waypoints.size(); ++i)
-                    waypoints[i] = Waypoint.build(xml_waypoints.get(i), route.id);
-
-                Log.i("CreateRouteQuery", String.format("inserting %d waypoints...", xml_waypoints.size()));
-                database.waypoints().insert(waypoints);
-                 */
+            Log.i("CreateRouteQuery", String.format("inserting %d waypoints...", waypoints.size()));
+            database.waypoints().insert(dbWaypoints);
 
             final long endTime = System.currentTimeMillis();
             Log.i( LOG_TAG, String.format( "CreateRouteTask: executed in %dms", endTime-startTime ) );

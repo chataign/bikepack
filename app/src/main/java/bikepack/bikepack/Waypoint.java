@@ -42,6 +42,11 @@ class Waypoint
         this.pos = new LatLng(latitude,longitude);
     }
 
+    Waypoint( NamedGlobalPosition position, long routeId )
+    {
+        this( routeId, position.latitude, position.longitude, position.name, position.description );
+    }
+
     /*
     <wpt lat="57.895556" lon="-5.159948">
         <ele>.0</ele>
@@ -52,7 +57,7 @@ class Waypoint
     </wpt>
     */
 
-    static Waypoint build( XmlUtils.XmlObject xml, long routeId )
+    static Waypoint buildFromXml( long routeId, XmlUtils.XmlObject xml )
             throws NoSuchFieldException, NumberFormatException
     {
         double latitude = Double.parseDouble( xml.getAttribute("lat").value );
@@ -66,9 +71,6 @@ class Waypoint
     @Dao
     interface DatabaseAccess
     {
-        @Query("SELECT * FROM Waypoint")
-        List<Waypoint> getAll();
-
         @Query("SELECT * FROM Waypoint WHERE routeId=:routeId")
         List<Waypoint> getByRouteId( long routeId );
 

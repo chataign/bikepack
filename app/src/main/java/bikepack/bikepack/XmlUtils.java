@@ -1,23 +1,13 @@
 package bikepack.bikepack;
 
-import android.content.ContentResolver;
-import android.net.Uri;
-
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
-import org.xmlpull.v1.XmlPullParserFactory;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
 
 class XmlUtils
 {
-    static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-
     static class XmlAttribute
     {
         final String name;
@@ -28,31 +18,66 @@ class XmlUtils
             this.name = name;
             this.value = value;
         }
+
+        XmlAttribute( XmlAttribute attribute )
+        {
+            this( attribute.name, attribute.value );
+        }
+
+        @Override
+        public  String toString()
+        {
+            return String.format("{ XmlAttribute[%s]=%s }", name, value );
+        }
     }
 
     static class XmlObject
     {
         final String tag;
-        String value="";
-        final List<XmlAttribute> attributes = new ArrayList<>();
-        final List<XmlObject> children = new ArrayList<>();
+        String value=null;
 
-        XmlObject( String tag ) { this.tag = tag; }
+        private final HashMap<String,XmlAttribute> attributes = new HashMap<>();
+        private final HashMap<String,XmlObject> children = new HashMap<>();
+
+        XmlObject( String tag )
+        {
+            this.tag = tag;
+        }
+
+        void addAttribute( XmlAttribute attribute )
+        {
+            if ( attribute == null ) return;
+            attributes.put( attribute.name, new XmlAttribute(attribute) );
+        }
 
         XmlAttribute getAttribute( String name ) throws NoSuchFieldException
         {
-            for ( XmlAttribute attribute : attributes )
-                if ( attribute.name.compareTo(name) == 0 ) return attribute;
+            XmlAttribute attribute = attributes.get(name);
+            if ( attribute != null ) return attribute;
+            throw new NoSuchFieldException("XML object="+tag+" has no attribute named="+name);
+        }
 
-            throw new NoSuchFieldException("no XML attribute with name="+name);
+        void addChild( XmlObject child )
+        {
+            if ( child == null ) return;
+            children.put( child.tag, child );
         }
 
         XmlObject getChild( String tag ) throws NoSuchFieldException
         {
-            for ( XmlObject child: children )
-                if ( child.tag.compareTo(tag) == 0 ) return child;
+            XmlObject child = children.get(tag);
+            if ( child != null ) return child;
+            throw new NoSuchFieldException("XML object="+this.tag+" has no child with tag="+tag);
+        }
 
-            throw new NoSuchFieldException("no XML child with tag="+tag);
+        String toString( int numTabs )
+        {
+            String str = "\n";
+            for ( int i=0; i< numTabs; ++i ) str += "> ";
+            str += String.format("XmlObject[%s]=%s", tag, value );
+            for ( XmlAttribute attribute : attributes.values() ) str += attribute.toString();
+            for ( XmlObject child : children.values() ) str += child.toString(numTabs+1);
+            return str;
         }
     }
 
@@ -70,7 +95,7 @@ class XmlUtils
                 object = new XmlObject(tag);
 
                 for ( int i=0; i< xml.getAttributeCount(); ++i )
-                    object.attributes.add( new XmlAttribute( xml.getAttributeName(i), xml.getAttributeValue(i) ) );
+                    object.addAttribute( new XmlAttribute( xml.getAttributeName(i), xml.getAttributeValue(i) ) );
             }
             else if ( eventType == XmlPullParser.TEXT && object != null )
             {
@@ -83,69 +108,12 @@ class XmlUtils
             else if ( eventType == XmlPullParser.START_TAG )
             {
                 XmlObject child = readNext(xml);
-                if ( child != null ) object.children.add(child);
+                if ( child != null ) object.addChild(child);
             }
 
             eventType = xml.next();
         }
 
         return object;
-    }
-
-    static private XmlObject readNext( XmlPullParser xml, String tag )
-            throws IOException, XmlPullParserException
-    {
-        int eventType = xml.getEventType();
-
-        while ( eventType != XmlPullParser.END_DOCUMENT )
-        {
-            String current_tag = xml.getName();
-
-            if ( eventType == XmlPullParser.START_TAG && current_tag.compareTo(tag) == 0 )
-                return readNext(xml);
-
-            eventType = xml.next();
-        }
-
-        return null;
-    }
-
-    static XmlObject readFirst( ContentResolver contentResolver, Uri uri, String tag )
-            throws IOException, XmlPullParserException
-    {
-        XmlPullParser xml = XmlPullParserFactory
-                .newInstance()
-                .newPullParser();
-
-        InputStream xmlStream = contentResolver.openInputStream(uri);
-        xml.setInput( xmlStream, null);
-
-        return readNext( xml, tag );
-    }
-
-    static List<XmlObject> readAll( ContentResolver content_resolver, Uri uri, String tag )
-            throws XmlPullParserException, IOException
-    {
-        XmlPullParser xml = XmlPullParserFactory
-                .newInstance()
-                .newPullParser();
-        
-        InputStream xmlStream = content_resolver.openInputStream(uri);
-        xml.setInput( xmlStream, null);
-
-        List<XmlObject> objects = new ArrayList<>();
-        int eventType = xml.getEventType();
-
-        while ( eventType != XmlPullParser.END_DOCUMENT )
-        {
-            String currentTag = xml.getName();
-
-            if ( eventType == XmlPullParser.START_TAG && currentTag.compareTo(tag) == 0 )
-                objects.add( readNext(xml) );
-
-            eventType = xml.next();
-        }
-
-        return objects;
     }
 }

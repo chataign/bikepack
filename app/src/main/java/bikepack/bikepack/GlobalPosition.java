@@ -5,16 +5,25 @@ import com.google.maps.android.SphericalUtil;
 
 public class GlobalPosition
 {
-    final LatLng latlng;
+    final double latitude;
+    final double longitude;
     final float elevation;
+    final LatLng position;
 
     GlobalPosition( double latitude, double longitude, float elevation )
     {
-        this.latlng = new LatLng(latitude,longitude);
+        this.latitude = latitude;
+        this.longitude = longitude;
         this.elevation = elevation;
+        this.position = new LatLng(latitude,longitude);
     }
 
-    static GlobalPosition buildFromXml( XmlUtils.XmlObject xml )
+    GlobalPosition( GlobalPosition position )
+    {
+        this( position.latitude, position.longitude, position.elevation );
+    }
+
+    static GlobalPosition buildFromGpx( XmlUtils.XmlObject xml )
             throws NoSuchFieldException, NumberFormatException
     {
         double latitude = Double.parseDouble( xml.getAttribute("lat").value );
@@ -24,8 +33,8 @@ public class GlobalPosition
         return new GlobalPosition( latitude, longitude, elevation );
     }
 
-    static double distance( GlobalPosition pos1, GlobalPosition pos2 )
+    static double distanceBetween( GlobalPosition pos1, GlobalPosition pos2 )
     {
-        return SphericalUtil.computeDistanceBetween( pos1.latlng, pos2.latlng );
+        return SphericalUtil.computeDistanceBetween( pos1.position, pos2.position );
     }
 }

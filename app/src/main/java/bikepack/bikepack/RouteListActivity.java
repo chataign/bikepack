@@ -141,14 +141,17 @@ public class RouteListActivity extends AppCompatActivity
         final TextView progressMessage = progressDialogView.findViewById(R.id.progress_message);
         progressMessage.setText( getString(R.string.route_import_dialog_parse_gpx) );
 
-        GPXFileParser gpxFileParser = new GPXFileParser(getContentResolver(), routeUri, new GPXFileParser.Listener()
+        GpxFileParser gpxFileParser = new GpxFileParser(getContentResolver(), routeUri, new GpxFileParser.Listener()
         {
             @Override
-            public void onGpxFileRead( Metadata metadata, List<GlobalPosition> trackpoints )
+            public void onGpxFileRead( Metadata metadata,
+                                       List<GlobalPosition> trackpoints,
+                                       List<NamedGlobalPosition> waypoints )
             {
                 progressMessage.setText( getString(R.string.route_import_dialog_write_db) );
 
-                CreateRouteQuery createRouteTask = new CreateRouteQuery( database, metadata, trackpoints, new CreateRouteQuery.Listener()
+                CreateRouteQuery createRouteTask = new CreateRouteQuery(
+                        database, metadata, trackpoints, waypoints, new CreateRouteQuery.Listener()
                 {
                     public void onRouteCreated(Route route)
                     {

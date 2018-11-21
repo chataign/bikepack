@@ -15,16 +15,16 @@ import java.util.List;
 
 import static bikepack.bikepack.XmlUtils.readNext;
 
-public class GPXFileParser extends AsyncTask< Void, Void, Void >
+public class GpxFileParser extends AsyncTask< Void, Void, Void >
 {
     interface Listener
     {
-        void onGpxFileRead( Metadata metadata, List<GlobalPosition> trackpoints );
+        void onGpxFileRead( Metadata metadata, List<GlobalPosition> trackpoints, List<NamedGlobalPosition> waypoints );
         void onGpxReadError( String errorMessage );
         void onGpxReadCancelled();
     }
 
-    private static final String LOG_TAG = "GPXFileParser";
+    private static final String LOG_TAG = "GpxFileParser";
 
     private final ContentResolver contentResolver;
     private final Uri fileUri;
@@ -32,9 +32,10 @@ public class GPXFileParser extends AsyncTask< Void, Void, Void >
 
     private Metadata metadata = null;
     private List<GlobalPosition> trackpoints = new ArrayList<>();
+    private List<NamedGlobalPosition> waypoints = new ArrayList<>();
     private Exception error = null;
 
-    GPXFileParser( @NonNull ContentResolver contentResolver, @NonNull Uri fileUri, @NonNull Listener listener )
+    GpxFileParser(@NonNull ContentResolver contentResolver, @NonNull Uri fileUri, @NonNull Listener listener )
     {
         this.contentResolver = contentResolver;
         this.fileUri = fileUri;
@@ -66,16 +67,17 @@ public class GPXFileParser extends AsyncTask< Void, Void, Void >
                     if ( currentTag.compareTo(Metadata.GPX_TAG) == 0 )
                     {
                         XmlUtils.XmlObject xmlObject = readNext(xml);
-                        metadata = Metadata.buildFromXml(xmlObject);
+                        metadata = Metadata.buildFromGpx(xmlObject);
                     }
                     else if ( currentTag.compareTo(Trackpoint.GPX_TAG) == 0 )
                     {
                         XmlUtils.XmlObject xmlObject = readNext(xml);
-                        trackpoints.add( GlobalPosition.buildFromXml(xmlObject) );
+                        trackpoints.add( GlobalPosition.buildFromGpx(xmlObject) );
                     }
                     else if ( currentTag.compareTo(Waypoint.GPX_TAG) == 0 )
                     {
-                        // TODO
+                        XmlUtils.XmlObject xmlObject = readNext(xml);
+                        waypoints.add( NamedGlobalPosition.buildFromGpx(xmlObject) );
                     }
                 }
 
@@ -96,15 +98,10 @@ public class GPXFileParser extends AsyncTask< Void, Void, Void >
     }
 
     @Override
-    protected void onPreExecute()
-    {
-    }
-
-    @Override
     protected void onPostExecute( Void nothing )
     {
         if ( error != null ) listener.onGpxReadError( error.getMessage() );
-        else if ( metadata != null ) listener.onGpxFileRead( metadata, trackpoints );
+        else if ( metadata != null ) listener.onGpxFileRead( metadata, trackpoints, waypoints );
     }
 
     @Override

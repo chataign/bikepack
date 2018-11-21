@@ -97,24 +97,6 @@ public class RouteMapActivity extends AppCompatActivity
     }
 
     @Override
-    public void onRouteDataReceived( List<Trackpoint> trackpoints, List<Waypoint> waypoints )
-    {
-        this.trackpoints = trackpoints;
-        drawMap( map, trackpoints, waypoints );
-
-        ui.elevationView.setTrackpoints(trackpoints,this);
-
-        ui.layout.setEnabled(true);
-        ui.progressBar.setVisibility(View.GONE);
-    }
-
-    @Override
-    public void onRouteDataError( String errorMessage )
-    {
-        Log.e( LOG_TAG, errorMessage );
-    }
-
-    @Override
     public void onMapReady(GoogleMap map)
     {
         Log.i( LOG_TAG, "onMapReady" );
@@ -148,8 +130,28 @@ public class RouteMapActivity extends AppCompatActivity
         route = intent.getParcelableExtra( getString(R.string.route_extra) );
         if ( route == null ) this.finish();
 
+        map.moveCamera( CameraUpdateFactory.newLatLngBounds(route.bounds,10) );
+
         GetRouteDataQuery task = new GetRouteDataQuery( database, route.routeId, this );
         task.execute();
+    }
+
+    @Override
+    public void onRouteDataReceived( List<Trackpoint> trackpoints, List<Waypoint> waypoints )
+    {
+        this.trackpoints = trackpoints;
+        drawMap( map, trackpoints, waypoints );
+
+        ui.elevationView.setTrackpoints(trackpoints,this);
+
+        ui.layout.setEnabled(true);
+        ui.progressBar.setVisibility(View.GONE);
+    }
+
+    @Override
+    public void onRouteDataError( String errorMessage )
+    {
+        Log.e( LOG_TAG, errorMessage );
     }
 
     @Override
@@ -193,9 +195,9 @@ public class RouteMapActivity extends AppCompatActivity
 
         ui.elevationView.setTrackpoints(trackpoints,RouteMapActivity.this);
 
-        LatLngBounds.Builder bounds_builder = new LatLngBounds.Builder();
-        for ( LatLng point : points) bounds_builder.include(point);
-        map.moveCamera(CameraUpdateFactory.newLatLngBounds( bounds_builder.build(), 10));
+        LatLngBounds.Builder boundsBuilder = new LatLngBounds.Builder();
+        for ( LatLng point : points) boundsBuilder.include(point);
+        map.moveCamera(CameraUpdateFactory.newLatLngBounds( boundsBuilder.build(), 10));
 
         startSupportActionMode(new ActionMode.Callback() {
             @Override
@@ -388,27 +390,17 @@ public class RouteMapActivity extends AppCompatActivity
                 .color(Color.RED)
                 .zIndex(ROUTE_MAP_DEPTH);
 
-        LatLngBounds.Builder boundsBuilder = new LatLngBounds.Builder();
-
         for ( Trackpoint trackpoint : trackpoints )
-        {
             polyline.add(trackpoint.pos);
-            boundsBuilder.include(trackpoint.pos);
-        }
 
         map.addPolyline(polyline);
 
         for ( Waypoint waypoint : waypoints)
         {
-            boundsBuilder.include(waypoint.pos);
-
             map.addMarker( new MarkerOptions()
                     .position(waypoint.pos)
                     .title(waypoint.name));
         }
-
-        LatLngBounds bounds = boundsBuilder.build();
-        map.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 10));
 
         long after = System.currentTimeMillis();
         Log.i( LOG_TAG, String.format( "map drawn in %dms", after-before ) );

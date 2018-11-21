@@ -6,6 +6,7 @@ import android.arch.persistence.room.TypeConverters;
 
 @Database(entities = { Route.class, Trackpoint.class, Waypoint.class }, version = 2 )
 @TypeConverters({Converters.class})
+
 public abstract class AppDatabase extends RoomDatabase
 {
     static final String DB_NAME = "app_db";

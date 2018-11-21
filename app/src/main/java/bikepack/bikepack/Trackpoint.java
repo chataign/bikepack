@@ -17,7 +17,7 @@ class Trackpoint
     static String GPX_TAG = "trkpt";
 
     @PrimaryKey(autoGenerate = true)
-    int trackPointId;
+    long trackPointId;
     final long routeId;
     final double latitude;
     final double longitude;
@@ -25,7 +25,7 @@ class Trackpoint
     @Ignore
     final LatLng pos;
 
-    Trackpoint( double latitude, double longitude, float elevation, long routeId )
+    Trackpoint( long routeId, double latitude, double longitude, float elevation )
     {
         this.routeId = routeId;
         this.latitude = latitude;
@@ -36,17 +36,12 @@ class Trackpoint
 
     Trackpoint( GlobalPosition position, long routeId )
     {
-        this( position.latlng.latitude,
-                position.latlng.longitude,
-                position.elevation, routeId );
+        this( routeId, position.latitude, position.longitude, position.elevation );
     }
 
     @Dao
     interface DatabaseAccess
     {
-        @Query("SELECT * FROM Trackpoint")
-        List<Trackpoint> getAll();
-
         @Query("SELECT * FROM Trackpoint WHERE routeId = :routeId")
         List<Trackpoint> getByRouteId( long routeId );
 
