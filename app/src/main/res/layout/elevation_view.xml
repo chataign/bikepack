@@ -66,18 +66,17 @@
             android:visibility="invisible"/>
 
         <ImageView
-            android:id="@+id/selection_marker"
-            android:src="@drawable/plot_selection"
-            android:alpha="0.5"
-            android:layout_centerVertical="true"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:visibility="invisible"/>
-
-        <ImageView
             android:id="@+id/touch_marker"
             android:src="@drawable/plot_marker"
             android:alpha="1"
+            android:layout_centerHorizontal="true"
+            android:layout_centerVertical="true"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:visibility="invisible"/>
+
+        <bikepack.bikepack.SelectionView
+            android:id="@+id/selection_view"
             android:layout_centerHorizontal="true"
             android:layout_centerVertical="true"
             android:layout_width="wrap_content"

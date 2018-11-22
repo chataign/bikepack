@@ -25,6 +25,7 @@
     <string name="route_delete_dialog_message">"This route will be permantently removed from your library."</string>
 
     <string name="route_edit_dialog_title">"Edit route"</string>
+    <string name="waypoint_create_dialog_title">"Create waypoint"</string>
 
     <string name="dialog_ok">"OK"</string>
     <string name="dialog_cancel">"CANCEL"</string>
@@ -37,4 +38,5 @@
     <string name="menu_show_map">"Show map"</string>
     <string name="menu_map_layers">"Map layers"</string>
     <string name="menu_toggle_elevation">"Toggle elevation"</string>
+    <string name="menu_add_waypoint">Add waypoint</string>
 </resources>
