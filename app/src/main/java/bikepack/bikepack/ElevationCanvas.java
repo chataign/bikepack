@@ -6,6 +6,7 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.util.AttributeSet;
@@ -46,10 +47,12 @@ public class ElevationCanvas extends View
         num_guides = attributes.getColor( R.styleable.ElevationCanvas_num_guides, DEFAULT_NUM_GUIDES );
 
         linePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        linePaint.setStyle(Paint.Style.STROKE);
         linePaint.setColor( lineColor );
         linePaint.setStrokeWidth( lineWidth );
 
         guidePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        guidePaint.setStyle(Paint.Style.STROKE);
         guidePaint.setColor( guideColor );
         guidePaint.setStrokeWidth( guideWidth );
     }
@@ -140,18 +143,20 @@ public class ElevationCanvas extends View
             for ( int y= canvasTop; y <= canvasBottom; y += interval )
                 canvas.drawLine( canvasLeft, y, canvasRight, y, plotCanvas.guidePaint );
 
-            for ( int i=1; i< trackpoints.size(); ++i )
+            Path elevationPath = new Path();
+
+            for ( int i=0; i< trackpoints.size(); ++i )
             {
-                float elevation1 = trackpoints.get(i-1).elevation;
-                float x1 = canvasLeft + (i-1) * canvasWidth / (float) trackpoints.size();
-                float y1 = canvasBottom - canvasHeight * (elevation1 - minElevation) / (maxElevation - minElevation);
+                float elevation = trackpoints.get(i).elevation;
 
-                float elevation2 = trackpoints.get(i).elevation;
-                float x2 = canvasLeft + i * canvasWidth / (float) trackpoints.size();
-                float y2 = canvasBottom - canvasHeight * (elevation2 - minElevation) / (maxElevation - minElevation);
+                float x = canvasLeft + i*canvasWidth / (float) trackpoints.size();
+                float y = canvasBottom - canvasHeight * (elevation - minElevation) / (maxElevation - minElevation);
 
-                canvas.drawLine( x1, y1, x2, y2, plotCanvas.linePaint );
+                if ( i == 0 ) elevationPath.moveTo(x,y);
+                else elevationPath.lineTo(x,y);
             }
+
+            canvas.drawPath( elevationPath, plotCanvas.linePaint );
 
             long endTime = System.currentTimeMillis();
             Log.i( LOG_TAG, "drawing time=" + (endTime-startTime) );
