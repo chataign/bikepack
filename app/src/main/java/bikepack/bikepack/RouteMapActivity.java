@@ -34,6 +34,7 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.maps.android.SphericalUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,6 +53,7 @@ public class RouteMapActivity extends AppCompatActivity
     private static final String MAP_VIEW_BUNDLE_KEY = "MAP_VIEW_BUNDLE_KEY";
     private static final float ROUTE_MAP_DEPTH = 1.0f;
     private static final float MARKERS_MAP_DEPTH = 2.0f;
+    private static final int BOUNDS_PADDING_PX = 100;
 
     private GoogleMap map=null;
     private Route route=null;
@@ -59,9 +61,12 @@ public class RouteMapActivity extends AppCompatActivity
     private Marker waypointCreationMarker=null;
     private Polyline selectionPolyline =null;
     private List<Marker> waypointMarkers=new ArrayList<>();
+    private ActionMode actionMode=null;
 
     private List<Trackpoint> trackpoints=null;
     private List<Waypoint> waypoints=null;
+    private List<Trackpoint> selectionTrackpoints=null;
+    private List<Trackpoint> originalTrackpoints=null;
     private SharedPreferences preferences;
 
     private AppDatabase database;
@@ -128,12 +133,12 @@ public class RouteMapActivity extends AppCompatActivity
                 .position( new LatLng(0,0) )
                 .visible(false)
                 .icon( BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE) )
-                .anchor(0.5f,0.5f)
+                .anchor(0.5f,1.0f) // middle-bottom of pin marker
                 .draggable(false)
                 .zIndex(MARKERS_MAP_DEPTH));
 
         selectionPolyline = map.addPolyline( new PolylineOptions()
-                .visible(true)
+                .visible(false)
                 .color(Color.BLUE)
                 .zIndex(MARKERS_MAP_DEPTH));
 
@@ -143,7 +148,7 @@ public class RouteMapActivity extends AppCompatActivity
         route = intent.getParcelableExtra( getString(R.string.route_extra) );
         if ( route == null ) this.finish();
 
-        map.moveCamera( CameraUpdateFactory.newLatLngBounds(route.bounds,10) );
+        map.moveCamera( CameraUpdateFactory.newLatLngBounds(route.bounds,BOUNDS_PADDING_PX ) );
 
         GetRouteDataQuery task = new GetRouteDataQuery( database, route.routeId, this );
         task.execute();
@@ -210,28 +215,13 @@ public class RouteMapActivity extends AppCompatActivity
     }
 
     @Override
-    public void onSelectionUpdated( List<Trackpoint> selection, List<LatLng> points )
+    public void onSelectionCreated( final List<Trackpoint> selection, List<LatLng> points )
     {
-        if ( selectionPolyline != null )
-        {
-            selectionPolyline.setPoints( points );
-            selectionPolyline.setVisible(true);
-        }
-    }
+        selectionTrackpoints = selection;
+        selectionPolyline.setPoints( points );
+        selectionPolyline.setVisible(true);
 
-    @Override
-    public void onSelectionEnd(final List<Trackpoint> selection, List<LatLng> points )
-    {
-        final List<Trackpoint> originalTrackpoints = trackpoints;
-        trackpoints = selection;
-
-        ui.elevationView.setTrackpoints(trackpoints,RouteMapActivity.this);
-
-        LatLngBounds.Builder boundsBuilder = new LatLngBounds.Builder();
-        for ( LatLng point : points) boundsBuilder.include(point);
-        map.moveCamera(CameraUpdateFactory.newLatLngBounds( boundsBuilder.build(), 10));
-
-        startSupportActionMode(new ActionMode.Callback() {
+        actionMode = startSupportActionMode(new ActionMode.Callback() {
             int originalStatusBarColor;
             final int actionModeStatusBarColor = getResources().getColor(R.color.black);
 
@@ -240,13 +230,20 @@ public class RouteMapActivity extends AppCompatActivity
             {
                 MenuInflater inflater = getMenuInflater();
                 inflater.inflate(R.menu.route_selection_menu, menu);
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+                {
+                    originalStatusBarColor = getWindow().getStatusBarColor();
+                    getWindow().setStatusBarColor(actionModeStatusBarColor);
+                }
+
                 return true;
             }
 
             @Override
             public boolean onPrepareActionMode(ActionMode mode, Menu menu)
             {
-                return true;
+                return false;
             }
 
             @Override
@@ -254,11 +251,11 @@ public class RouteMapActivity extends AppCompatActivity
                 switch (item.getItemId())
                 {
                     case R.id.action_save:
-                        saveRouteSelection(selection);
+                        if ( selectionTrackpoints != null ) saveRouteSelection(selectionTrackpoints);
                         mode.finish();
-                        break;
+                        return true;
                 }
-                return true ;
+                return false;
             }
 
             @Override
@@ -267,11 +264,46 @@ public class RouteMapActivity extends AppCompatActivity
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
                     getWindow().setStatusBarColor(originalStatusBarColor);
 
-                selectionPolyline.remove();
+                selectionPolyline.setVisible(false);
+                selectionTrackpoints=null;
+
                 trackpoints = originalTrackpoints;
+
+                ui.elevationView.onExitSelection();
                 ui.elevationView.setTrackpoints(originalTrackpoints,RouteMapActivity.this);
+
+                originalTrackpoints=null;
             }
-        }).setTitle("Selection");
+        });
+
+        float selectionDistance = (float) SphericalUtil.computeLength(points);
+        actionMode.setTitle( "Selection: " + new DistanceFormater().format(selectionDistance) );
+        actionMode.setSubtitle(R.string.route_save_selection_subtitle);
+    }
+
+    @Override
+    public void onSelectionUpdated( final List<Trackpoint> selection, List<LatLng> points )
+    {
+        selectionTrackpoints = selection;
+        selectionPolyline.setPoints( points );
+        selectionPolyline.setVisible(true);
+
+        float selectionDistance = (float) SphericalUtil.computeLength(points);
+        actionMode.setTitle( "Selection: " + new DistanceFormater().format(selectionDistance) );
+    }
+
+    @Override
+    public void onSelectionDoubleClicked(final List<Trackpoint> selection, List<LatLng> points )
+    {
+        originalTrackpoints = trackpoints;
+        trackpoints = selection;
+
+        ui.elevationView.setTrackpoints(trackpoints,RouteMapActivity.this);
+
+        LatLngBounds.Builder boundsBuilder = new LatLngBounds.Builder();
+        for ( LatLng point : points) boundsBuilder.include(point);
+
+        map.moveCamera(CameraUpdateFactory.newLatLngBounds( boundsBuilder.build(), BOUNDS_PADDING_PX ));
     }
 
     private void saveRouteSelection( final List<Trackpoint> selection )
@@ -284,7 +316,7 @@ public class RouteMapActivity extends AppCompatActivity
         routeEditor.authorLink.setText(route.authorLink);
 
         AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(RouteMapActivity.this)
-            .setTitle(R.string.route_edit_dialog_title)
+            .setTitle(R.string.route_save_selection_title)
             .setView(routeEditorView)
             .setPositiveButton( R.string.dialog_ok, new DialogInterface.OnClickListener()
         {
@@ -511,11 +543,21 @@ public class RouteMapActivity extends AppCompatActivity
     private void createWaypoint()
     {
         startSupportActionMode(new ActionMode.Callback() {
+            int originalStatusBarColor;
+            final int actionModeStatusBarColor = getResources().getColor(R.color.black);
+
             @Override
             public boolean onCreateActionMode(ActionMode mode, Menu menu)
             {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+                {
+                    originalStatusBarColor = getWindow().getStatusBarColor();
+                    getWindow().setStatusBarColor(actionModeStatusBarColor);
+                }
+
                 MenuInflater inflater = getMenuInflater();
                 inflater.inflate(R.menu.add_waypoint_menu, menu);
+
                 waypointCreationMarker.setVisible(true);
                 waypointCreationMarker.setPosition( RouteMapActivity.this.map.getCameraPosition().target );
                 map.setOnCameraMoveListener(new GoogleMap.OnCameraMoveListener() {
@@ -539,7 +581,7 @@ public class RouteMapActivity extends AppCompatActivity
                 switch (item.getItemId())
                 {
                     case R.id.action_save:
-                        saveWaypoint( route.routeId, map.getCameraPosition().target );
+                        saveWaypoint( route.routeId, waypointCreationMarker.getPosition() );
                         mode.finish();
                         break;
                 }
@@ -549,9 +591,11 @@ public class RouteMapActivity extends AppCompatActivity
             @Override
             public void onDestroyActionMode(ActionMode mode)
             {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+                    getWindow().setStatusBarColor(originalStatusBarColor);
+
                 waypointCreationMarker.setVisible(false);
                 map.setOnCameraMoveListener(null);
-                //ui.waypointMarker.setVisibility(View.GONE);
             }
         }).setTitle("Create waypoint");
     }
