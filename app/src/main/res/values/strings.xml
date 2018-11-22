@@ -25,6 +25,8 @@
     <string name="route_delete_dialog_message">"This route will be permantently removed from your library."</string>
 
     <string name="route_edit_dialog_title">"Edit route"</string>
+    <string name="route_save_selection_title">"Save selection"</string>
+    <string name="route_save_selection_subtitle">"Move selection edges to adjust"</string>
     <string name="waypoint_create_dialog_title">"Create waypoint"</string>
 
     <string name="dialog_ok">"OK"</string>
