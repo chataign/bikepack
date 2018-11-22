@@ -4,7 +4,10 @@ import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
-class UpdateRouteQuery extends AsyncTask< Void, Void, Route >
+import bikepack.bikepack.AppDatabase;
+import bikepack.bikepack.Route;
+
+class UpdateRouteQuery extends AsyncTask< Void, Void, Route>
 {
     interface Listener
     {

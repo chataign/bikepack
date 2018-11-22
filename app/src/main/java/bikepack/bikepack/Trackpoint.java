@@ -23,7 +23,9 @@ class Trackpoint
     final double longitude;
     final float elevation;
     @Ignore
-    final LatLng pos;
+    final LatLng latlng;
+    @Ignore
+    final GlobalPosition position;
 
     Trackpoint( long routeId, double latitude, double longitude, float elevation )
     {
@@ -31,7 +33,8 @@ class Trackpoint
         this.latitude = latitude;
         this.longitude = longitude;
         this.elevation = elevation;
-        this.pos = new LatLng(latitude,longitude);
+        this.latlng = new LatLng(latitude,longitude);
+        this.position = new GlobalPosition(latitude,longitude,elevation);
     }
 
     Trackpoint( GlobalPosition position, long routeId )

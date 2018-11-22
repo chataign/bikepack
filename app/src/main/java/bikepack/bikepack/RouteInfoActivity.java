@@ -17,6 +17,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 
+import bikepack.bikepack.DeleteRouteQuery;
+import bikepack.bikepack.UpdateRouteQuery;
 import bikepack.bikepack.databinding.RouteEditBinding;
 import bikepack.bikepack.databinding.RouteInfoActivityBinding;
 
@@ -71,29 +73,28 @@ public class RouteInfoActivity extends AppCompatActivity
 
         DistanceFormater formater = new DistanceFormater();
 
-        String total_distance = formater.format(route.totalDistance);
-        String total_ascent = formater.forceMeters(true).format(route.totalAscent);
-        String total_descent = formater.forceMeters(true).format(route.totalDescent);
-        String highest_elevation = formater.forceMeters(true).format(route.highestElevation);
-        String lowest_elevation = formater.forceMeters(true).format(route.lowestElevation);
-        String date_added = new SimpleDateFormat("dd/MM/yy").format(route.dateAdded);
-        String date_created = new SimpleDateFormat("dd/MM/yy").format(route.dateCreated);
+        String totalDistance = formater.format(route.totalDistance);
+        String totalAscent = formater.forceMeters(true).format(route.totalAscent);
+        String totalDescent = formater.forceMeters(true).format(route.totalDescent);
+        String highestElevation = formater.forceMeters(true).format(route.highestElevation);
+        String lowestElevation = formater.forceMeters(true).format(route.lowestElevation);
+        String dateCreated = new SimpleDateFormat("dd/MM/yy").format(route.dateCreated);
 
         List<RouteInfoItem> infoItems = new ArrayList<>();
 
-        infoItems.add( new RouteInfoItem( "Total distance", total_distance, R.drawable.ic_distance_black_24px ) );
-        infoItems.add( new RouteInfoItem( "Date created", date_created, R.drawable.ic_date_black_24px) );
-        infoItems.add( new RouteInfoItem( "Total ascent", total_ascent, R.drawable.ic_ascent_black_24px) );
-        infoItems.add( new RouteInfoItem( "Total descent", total_descent, R.drawable.ic_descent_black_24px) );
-        infoItems.add( new RouteInfoItem( "Highest elevation", highest_elevation, R.drawable.ic_elevation_top_black_24px ) );
-        infoItems.add( new RouteInfoItem( "Lowest elevation", lowest_elevation, R.drawable.ic_elevation_bottom_black_24px ) );
+        infoItems.add( new RouteInfoItem( "Total distance", totalDistance, R.drawable.ic_distance_black_24px ) );
+        infoItems.add( new RouteInfoItem( "Date created", dateCreated, R.drawable.ic_date_black_24px) );
+        infoItems.add( new RouteInfoItem( "Total ascent", totalAscent, R.drawable.ic_ascent_black_24px) );
+        infoItems.add( new RouteInfoItem( "Total descent", totalDescent, R.drawable.ic_descent_black_24px) );
+        infoItems.add( new RouteInfoItem( "Highest elevation", highestElevation, R.drawable.ic_elevation_top_black_24px ) );
+        infoItems.add( new RouteInfoItem( "Lowest elevation", lowestElevation, R.drawable.ic_elevation_bottom_black_24px ) );
 
         binding.name.setText(route.routeName);
         binding.author.setText(route.authorName);
         binding.grid.removeAllViews();
 
-        for ( RouteInfoItem info_item : infoItems )
-            binding.grid.addView( info_item.getView( getLayoutInflater() ) );
+        for ( RouteInfoItem infoItem : infoItems )
+            binding.grid.addView( infoItem.getView( getLayoutInflater() ) );
     }
 
     @Override

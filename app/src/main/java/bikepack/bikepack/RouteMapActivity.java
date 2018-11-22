@@ -11,8 +11,9 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
+import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.view.ActionMode;
 import android.util.Log;
@@ -20,6 +21,7 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -38,6 +40,7 @@ import java.util.List;
 
 import bikepack.bikepack.databinding.RouteEditBinding;
 import bikepack.bikepack.databinding.RouteMapActivityBinding;
+import bikepack.bikepack.databinding.WaypointEditBinding;
 
 public class RouteMapActivity extends AppCompatActivity
     implements OnMapReadyCallback,
@@ -52,10 +55,13 @@ public class RouteMapActivity extends AppCompatActivity
 
     private GoogleMap map=null;
     private Route route=null;
-    private Marker touchMarker =null;
+    private Marker mapTouchedMarker =null;
+    private Marker waypointCreationMarker=null;
     private Polyline selectionPolyline =null;
+    private List<Marker> waypointMarkers=new ArrayList<>();
 
     private List<Trackpoint> trackpoints=null;
+    private List<Waypoint> waypoints=null;
     private SharedPreferences preferences;
 
     private AppDatabase database;
@@ -107,24 +113,31 @@ public class RouteMapActivity extends AppCompatActivity
         map.getUiSettings().setMapToolbarEnabled(false);
         map.setMapType( preferences.getInt(getString(R.string.preferences_map_type), GoogleMap.MAP_TYPE_HYBRID ) );
 
-        Drawable touch_drawable = getResources().getDrawable(R.drawable.map_marker);
-        BitmapDescriptor touch_icon = getMarkerIconFromDrawable(touch_drawable);
+        Drawable touchMarkerDrawable = getResources().getDrawable(R.drawable.map_marker);
+        BitmapDescriptor touchMarkerIcon = getMarkerIconFromDrawable(touchMarkerDrawable);
 
-        touchMarker = map.addMarker( new MarkerOptions()
+        mapTouchedMarker = map.addMarker( new MarkerOptions()
                 .position( new LatLng(0,0) )
                 .visible(false)
-                .icon(touch_icon)
+                .icon(touchMarkerIcon)
                 .anchor(0.5f,0.5f)
                 .draggable(false)
                 .zIndex(MARKERS_MAP_DEPTH));
 
-        this.map = map;
-    }
+        waypointCreationMarker = map.addMarker( new MarkerOptions()
+                .position( new LatLng(0,0) )
+                .visible(false)
+                .icon( BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE) )
+                .anchor(0.5f,0.5f)
+                .draggable(false)
+                .zIndex(MARKERS_MAP_DEPTH));
 
-    @Override
-    public void onMapLoaded()
-    {
-        Log.i( LOG_TAG, "onMapLoaded" );
+        selectionPolyline = map.addPolyline( new PolylineOptions()
+                .visible(true)
+                .color(Color.BLUE)
+                .zIndex(MARKERS_MAP_DEPTH));
+
+        this.map = map;
 
         Intent intent = getIntent();
         route = intent.getParcelableExtra( getString(R.string.route_extra) );
@@ -137,10 +150,39 @@ public class RouteMapActivity extends AppCompatActivity
     }
 
     @Override
+    public void onMapLoaded()
+    {
+        Log.i( LOG_TAG, "onMapLoaded" );
+    }
+
+    @Override
     public void onRouteDataReceived( List<Trackpoint> trackpoints, List<Waypoint> waypoints )
     {
         this.trackpoints = trackpoints;
-        drawMap( map, trackpoints, waypoints );
+        this.waypoints = waypoints;
+
+        PolylineOptions polyline = new PolylineOptions()
+                .color(Color.RED)
+                .zIndex(ROUTE_MAP_DEPTH);
+
+        for ( Trackpoint trackpoint : trackpoints )
+            polyline.add(trackpoint.latlng);
+
+        map.addPolyline(polyline);
+
+        for ( Marker marker : waypointMarkers )
+            marker.remove();
+
+        waypointMarkers.clear();
+
+        for ( Waypoint waypoint : waypoints)
+        {
+            Marker waypointMarker = map.addMarker( new MarkerOptions()
+                .position(waypoint.latlng)
+                .title(waypoint.name));
+
+            waypointMarkers.add(waypointMarker);
+        }
 
         ui.elevationView.setTrackpoints(trackpoints,this);
 
@@ -157,34 +199,24 @@ public class RouteMapActivity extends AppCompatActivity
     @Override
     public void onValueTouched( Trackpoint trackpoint )
     {
-        touchMarker.setVisible(true);
-        touchMarker.setPosition( trackpoint.pos );
+        mapTouchedMarker.setVisible(true);
+        mapTouchedMarker.setPosition( trackpoint.latlng );
     }
 
     @Override
     public void onValueReleased()
     {
-        touchMarker.setVisible(false);
-    }
-
-    @Override
-    public void onSelectionStart( Trackpoint trackpoint )
-    {
-        if ( selectionPolyline != null )
-            selectionPolyline.remove();
-
-        selectionPolyline = map.addPolyline( new PolylineOptions()
-                .visible(true)
-                .color(Color.BLUE)
-                .zIndex(MARKERS_MAP_DEPTH)
-                .add(trackpoint.pos));
+        mapTouchedMarker.setVisible(false);
     }
 
     @Override
     public void onSelectionUpdated( List<Trackpoint> selection, List<LatLng> points )
     {
         if ( selectionPolyline != null )
+        {
             selectionPolyline.setPoints( points );
+            selectionPolyline.setVisible(true);
+        }
     }
 
     @Override
@@ -200,6 +232,9 @@ public class RouteMapActivity extends AppCompatActivity
         map.moveCamera(CameraUpdateFactory.newLatLngBounds( boundsBuilder.build(), 10));
 
         startSupportActionMode(new ActionMode.Callback() {
+            int originalStatusBarColor;
+            final int actionModeStatusBarColor = getResources().getColor(R.color.black);
+
             @Override
             public boolean onCreateActionMode(ActionMode mode, Menu menu)
             {
@@ -229,6 +264,9 @@ public class RouteMapActivity extends AppCompatActivity
             @Override
             public void onDestroyActionMode(ActionMode mode)
             {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+                    getWindow().setStatusBarColor(originalStatusBarColor);
+
                 selectionPolyline.remove();
                 trackpoints = originalTrackpoints;
                 ui.elevationView.setTrackpoints(originalTrackpoints,RouteMapActivity.this);
@@ -259,26 +297,44 @@ public class RouteMapActivity extends AppCompatActivity
                         routeEditor.authorLink.getText().toString(),
                         route.dateCreated);
 
-                List<GlobalPosition> positions = new ArrayList<>();
-                for ( Trackpoint trackpoint : selection ) positions.add(
-                        new GlobalPosition( trackpoint.latitude, trackpoint.longitude, trackpoint.elevation ) );
+                List<GlobalPosition> trackpointsData= new ArrayList<>();
+                LatLngBounds.Builder selectionBoundsBuilder = new LatLngBounds.Builder();
 
-                /*
-                AppRepository.CreateRouteTask createRouteTask = new AppRepository.CreateRouteTask( database, metadata, positions, new AppRepository.CreateRouteListener() {
+                for ( Trackpoint trackpoint : selection )
+                {
+                    selectionBoundsBuilder.include( trackpoint.latlng );
+
+                    trackpointsData.add(
+                            new GlobalPosition( trackpoint.latitude,
+                                    trackpoint.longitude,
+                                    trackpoint.elevation ) );
+                }
+
+                LatLngBounds selectionBounds = selectionBoundsBuilder.build();
+                List<NamedGlobalPosition> waypointsData = new ArrayList<>();
+
+                for ( Waypoint waypoint : waypoints )
+                {
+                    if ( selectionBounds.contains(waypoint.latlng) )
+                        waypointsData.add( waypoint.namedPosition );
+                }
+
+                CreateRouteQuery createRoute = new CreateRouteQuery(
+                        database, metadata, trackpointsData, waypointsData , new CreateRouteQuery.Listener() {
+
                     public void onRouteCreated(Route route) {
                         Toast toast = Toast.makeText( RouteMapActivity.this,
                                 R.string.route_created, Toast.LENGTH_SHORT );
                         toast.show();
                     }
-                    public void onError(String error_message) {
+                    public void onCreateRouteError(String error_message) {
                         Toast toast = Toast.makeText( RouteMapActivity.this,
                                 R.string.route_creation_failed, Toast.LENGTH_SHORT );
                         toast.show();
                     }
                 });
 
-                createRouteTask.execute();
-                 */
+                createRoute.execute();
             }
         })
             .setNegativeButton( R.string.dialog_cancel, null );
@@ -335,23 +391,12 @@ public class RouteMapActivity extends AppCompatActivity
                 }
                 return true;
 
-            case R.id.action_show_layers:
-                AlertDialog.Builder builder = new AlertDialog.Builder(this)
-                        .setTitle(R.string.map_layer_dialog_title)
-                        .setItems(R.array.map_type_names, new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int which)
-                            {
-                                int[] map_types = getResources().getIntArray(R.array.map_types);
-                                map.setMapType( map_types[which] );
-                                preferences.edit()
-                                    .putInt( getString(R.string.preferences_map_type), map.getMapType() )
-                                    .apply();
-                                dialog.dismiss();
-                            }
-                        });
+            case R.id.action_select_layer:
+                selectMapLayer();
+                return true;
 
-                AlertDialog alertDialog = builder.create();
-                alertDialog.show();
+            case R.id.action_add_waypoint:
+                createWaypoint();
                 return true;
 
             default:
@@ -380,29 +425,134 @@ public class RouteMapActivity extends AppCompatActivity
         ui.mapView.onStop();
     }
 
-    static void drawMap( @NonNull GoogleMap map,
-                  @NonNull List<Trackpoint> trackpoints,
-                  @NonNull List<Waypoint> waypoints )
+    private void selectMapLayer()
     {
-        long before = System.currentTimeMillis();
+        AlertDialog.Builder builder = new AlertDialog.Builder(this)
+                .setTitle(R.string.map_layer_dialog_title)
+                .setItems(R.array.map_type_names, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which)
+                    {
+                        int[] map_types = getResources().getIntArray(R.array.map_types);
+                        map.setMapType( map_types[which] );
+                        preferences.edit()
+                                .putInt( getString(R.string.preferences_map_type), map.getMapType() )
+                                .apply();
+                        dialog.dismiss();
+                    }
+                });
 
-        PolylineOptions polyline = new PolylineOptions()
-                .color(Color.RED)
-                .zIndex(ROUTE_MAP_DEPTH);
+        AlertDialog alertDialog = builder.create();
+        alertDialog.show();
+    }
 
-        for ( Trackpoint trackpoint : trackpoints )
-            polyline.add(trackpoint.pos);
+    private void saveWaypoint( final long routeId, final LatLng position )
+    {
+        View waypointEditView = getLayoutInflater().inflate(R.layout.waypoint_edit, null );
+        final WaypointEditBinding waypointEditor = DataBindingUtil.bind(waypointEditView);
 
-        map.addPolyline(polyline);
+        waypointEditor.name.setText("");
+        waypointEditor.description.setText("");
 
-        for ( Waypoint waypoint : waypoints)
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(R.string.waypoint_create_dialog_title);
+        builder.setView(waypointEditView);
+        builder.setNegativeButton( R.string.dialog_cancel, null );
+        builder.setPositiveButton( R.string.dialog_ok, new DialogInterface.OnClickListener()
         {
-            map.addMarker( new MarkerOptions()
-                    .position(waypoint.pos)
-                    .title(waypoint.name));
-        }
+            @Override
+            public void onClick(DialogInterface dialog, int id)
+            {
+                String name  = waypointEditor.name.getText().toString();
+                String description = waypointEditor.description.getText().toString();
 
-        long after = System.currentTimeMillis();
-        Log.i( LOG_TAG, String.format( "map drawn in %dms", after-before ) );
+                if ( name.isEmpty() )
+                {
+                    waypointEditor.name.setError("name cannot be empty!");
+                    return;
+                }
+
+                final Waypoint waypoint = new Waypoint( routeId,
+                        new GlobalPosition( position.latitude, position.longitude, 0 ),
+                        name, description );
+
+                new AsyncTask<Void,Void,Void>() {
+                    protected Void doInBackground(Void... nothing)
+                    {
+                        waypoint.waypointId = database.waypoints().insert(waypoint);
+                        return null;
+                    }
+
+                    protected void onPostExecute( Void nothing )
+                    {
+                        addWaypoint(waypoint);
+                        Toast toast = Toast.makeText( RouteMapActivity.this, "waypoint created", Toast.LENGTH_LONG );
+                        toast.show();
+                    }
+                }.execute();
+            }
+        });
+
+        builder.setNegativeButton( R.string.dialog_cancel, null );
+        AlertDialog edit_dialog = builder.create();
+        edit_dialog.show();
+    }
+
+    private void addWaypoint( Waypoint waypoint )
+    {
+        waypoints.add(waypoint);
+
+        Marker waypointMarker = map.addMarker( new MarkerOptions()
+                .position(waypoint.latlng)
+                .title(waypoint.name));
+
+        waypointMarkers.add(waypointMarker);
+    }
+
+    private void createWaypoint()
+    {
+        startSupportActionMode(new ActionMode.Callback() {
+            @Override
+            public boolean onCreateActionMode(ActionMode mode, Menu menu)
+            {
+                MenuInflater inflater = getMenuInflater();
+                inflater.inflate(R.menu.add_waypoint_menu, menu);
+                waypointCreationMarker.setVisible(true);
+                waypointCreationMarker.setPosition( RouteMapActivity.this.map.getCameraPosition().target );
+                map.setOnCameraMoveListener(new GoogleMap.OnCameraMoveListener() {
+                    @Override
+                    public void onCameraMove() {
+                        waypointCreationMarker.setPosition( RouteMapActivity.this.map.getCameraPosition().target );
+                    }
+                });
+
+                return true;
+            }
+
+            @Override
+            public boolean onPrepareActionMode(ActionMode mode, Menu menu)
+            {
+                return false;
+            }
+
+            @Override
+            public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+                switch (item.getItemId())
+                {
+                    case R.id.action_save:
+                        saveWaypoint( route.routeId, map.getCameraPosition().target );
+                        mode.finish();
+                        break;
+                }
+                return true ;
+            }
+
+            @Override
+            public void onDestroyActionMode(ActionMode mode)
+            {
+                waypointCreationMarker.setVisible(false);
+                map.setOnCameraMoveListener(null);
+                //ui.waypointMarker.setVisibility(View.GONE);
+            }
+        }).setTitle("Create waypoint");
     }
 }

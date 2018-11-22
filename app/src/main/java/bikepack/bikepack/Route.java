@@ -20,7 +20,7 @@ import java.util.List;
 import static android.arch.persistence.room.OnConflictStrategy.ABORT;
 
 @Entity
-class Route implements Parcelable
+public class Route implements Parcelable
 {
     @PrimaryKey(autoGenerate = true)
     int routeId;

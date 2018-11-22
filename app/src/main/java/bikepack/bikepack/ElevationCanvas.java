@@ -67,7 +67,7 @@ public class ElevationCanvas extends View
 
     // TODO setValues() with array of objects and value getter
 
-    void setTrackpoints( @NonNull List<Trackpoint> trackpoints )
+    void drawTrackpoints( @NonNull List<Trackpoint> trackpoints )
     {
         Log.i( LOG_TAG, "trackpoints=" + trackpoints.size() );
 

@@ -5,6 +5,9 @@ import android.util.Log;
 
 import java.util.List;
 
+import bikepack.bikepack.AppDatabase;
+import bikepack.bikepack.Route;
+
 class GetRoutesQuery extends AsyncTask< Void, Void, List<Route> >
 {
     interface Listener

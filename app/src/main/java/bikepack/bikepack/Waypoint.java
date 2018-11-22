@@ -23,14 +23,16 @@ class Waypoint
     static String GPX_TAG = "wpt";
 
     @PrimaryKey(autoGenerate = true)
-    int waypointId;
+    long waypointId;
     final long routeId;
     final double latitude;
     final double longitude;
     final String name;
     final String description;
     @Ignore
-    final LatLng pos;
+    final LatLng latlng;
+    @Ignore
+    final NamedGlobalPosition namedPosition;
 
     Waypoint( long routeId, double latitude, double longitude, String name, String description )
     {
@@ -39,10 +41,18 @@ class Waypoint
         this.longitude = longitude;
         this.name = name;
         this.description = description;
-        this.pos = new LatLng(latitude,longitude);
+        this.latlng = new LatLng(latitude,longitude);
+        this.namedPosition = new NamedGlobalPosition(
+                new GlobalPosition(latitude,longitude,0),
+                name, description );
     }
 
-    Waypoint( NamedGlobalPosition position, long routeId )
+    Waypoint( long routeId, GlobalPosition position, String name, String description )
+    {
+        this( routeId, position.latitude, position.longitude, name, description );
+    }
+
+    Waypoint( long routeId , NamedGlobalPosition position )
     {
         this( routeId, position.latitude, position.longitude, position.name, position.description );
     }
@@ -60,12 +70,11 @@ class Waypoint
     static Waypoint buildFromXml( long routeId, XmlUtils.XmlObject xml )
             throws NoSuchFieldException, NumberFormatException
     {
-        double latitude = Double.parseDouble( xml.getAttribute("lat").value );
-        double longitude = Double.parseDouble( xml.getAttribute("lon").value );
+        GlobalPosition position = GlobalPosition.buildFromGpx(xml);
         String name = xml.getChild("name").value;
         String description = xml.getChild("desc").value;
 
-        return new Waypoint( routeId, latitude, longitude, name, description );
+        return new Waypoint( routeId, position, name, description );
     }
 
     @Dao
@@ -73,6 +82,9 @@ class Waypoint
     {
         @Query("SELECT * FROM Waypoint WHERE routeId=:routeId")
         List<Waypoint> getByRouteId( long routeId );
+
+        @Insert
+        long insert(Waypoint waypoint);
 
         @Insert
         void insert(Waypoint... waypoints);

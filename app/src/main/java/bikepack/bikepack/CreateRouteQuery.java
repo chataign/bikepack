@@ -6,7 +6,13 @@ import android.util.Log;
 
 import java.util.List;
 
-class CreateRouteQuery extends AsyncTask< Void, Void, Route >
+import bikepack.bikepack.AppDatabase;
+import bikepack.bikepack.GlobalPosition;
+import bikepack.bikepack.Metadata;
+import bikepack.bikepack.NamedGlobalPosition;
+import bikepack.bikepack.Route;
+
+class CreateRouteQuery extends AsyncTask< Void, Void, Route>
 {
     interface Listener
     {
@@ -57,7 +63,7 @@ class CreateRouteQuery extends AsyncTask< Void, Void, Route >
 
             Waypoint dbWaypoints[] = new Waypoint[waypoints.size()];
             for (int i = 0; i < dbWaypoints.length; ++i)
-                dbWaypoints[i] = new Waypoint( waypoints.get(i), route.routeId );
+                dbWaypoints[i] = new Waypoint( route.routeId, waypoints.get(i) );
 
             Log.i("CreateRouteQuery", String.format("inserting %d waypoints...", waypoints.size()));
             database.waypoints().insert(dbWaypoints);
