@@ -7,12 +7,12 @@ import com.google.android.gms.maps.model.UrlTileProvider;
 import java.net.MalformedURLException;
 import java.net.URL;
 
-public class MapTileProvider extends UrlTileProvider
+public class OnlineTileProvider extends UrlTileProvider
 {
-    private static final String LOG_TAG = "MapTileProvider";
+    private static final String LOG_TAG = "OnlineTileProvider";
     private final String baseUrl;
 
-    public MapTileProvider( String baseUrl )
+    public OnlineTileProvider(String baseUrl )
     {
         super(256, 256);
         this.baseUrl = baseUrl;
@@ -23,13 +23,13 @@ public class MapTileProvider extends UrlTileProvider
     {
         try
         {
-            URL url = new URL( baseUrl
+            URL tileUrl = new URL( baseUrl
                 .replace("{zoom}", ""+zoom)
                 .replace("{x}",""+x)
                 .replace("{y}",""+y) );
 
             //Log.i( LOG_TAG, "url="+url );
-            return url;
+            return tileUrl;
         }
         catch ( MalformedURLException e )
         {
