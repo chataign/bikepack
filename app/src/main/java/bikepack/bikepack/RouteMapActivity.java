@@ -38,7 +38,6 @@ import com.google.android.gms.maps.model.TileOverlay;
 import com.google.android.gms.maps.model.TileOverlayOptions;
 import com.google.maps.android.SphericalUtil;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -118,11 +117,7 @@ public class RouteMapActivity extends AppCompatActivity
         map.getUiSettings().setZoomControlsEnabled(true);
         map.getUiSettings().setMapToolbarEnabled(false);
 
-        String mapType = getPreferences(Context.MODE_PRIVATE).getString(
-                getString(R.string.preferences_map_type),
-                getString(R.string.map_type_google_map) );
-
-        setMapType( map, mapType );
+        setMapType( map, getMapType() );
 
         Drawable touchMarkerDrawable = getResources().getDrawable(R.drawable.map_marker);
         BitmapDescriptor touchMarkerIcon = getMarkerIconFromDrawable(touchMarkerDrawable);
@@ -413,6 +408,22 @@ public class RouteMapActivity extends AppCompatActivity
                 }
                 return true;
 
+            case R.id.action_map_download:
+                LatLngBounds.Builder boundsBuilder = new LatLngBounds.Builder();
+                for ( Trackpoint trackpoint : trackpoints ) boundsBuilder.include( trackpoint.latlng );
+
+                String mapName = getMapType();
+                String baseUrl = null;
+
+                if ( mapName.equals( getString(R.string.map_type_osm_street) ) )
+                    baseUrl = getString(R.string.osm_street_base_url);
+                else if ( mapName.equals( getString(R.string.map_type_osm_cycle) ) )
+                    baseUrl = getString(R.string.osm_cycle_base_url);
+                else { Log.e( LOG_TAG, "can't download map="+mapName); return false; }
+
+                new DownloadMap(RouteMapActivity.this, mapName, baseUrl, boundsBuilder.build(), 1, 13, null ).execute();
+                return true;
+
             case R.id.action_select_layer:
                 selectMapLayer();
                 return true;
@@ -429,6 +440,7 @@ public class RouteMapActivity extends AppCompatActivity
     @Override
     protected void onResume()
     {
+        Log.i( LOG_TAG, "onResume" );
         super.onResume();
         ui.mapView.onResume();
     }
@@ -436,6 +448,7 @@ public class RouteMapActivity extends AppCompatActivity
     @Override
     protected void onStart()
     {
+        Log.i( LOG_TAG, "onStart" );
         super.onStart();
         ui.mapView.onStart();
     }
@@ -443,6 +456,7 @@ public class RouteMapActivity extends AppCompatActivity
     @Override
     protected void onStop()
     {
+        Log.i( LOG_TAG, "onStop" );
         super.onStop();
         ui.mapView.onStop();
     }
@@ -480,6 +494,13 @@ public class RouteMapActivity extends AppCompatActivity
         layerTypeDialog.show();
     }
 
+    private String getMapType()
+    {
+        return getPreferences(Context.MODE_PRIVATE).getString(
+            getString(R.string.preferences_map_type),
+            getString(R.string.map_type_google_map) );
+    }
+
     private void setMapType( GoogleMap map, String mapType )
     {
         Log.i( LOG_TAG, "setting map type=" + mapType );
@@ -487,6 +508,11 @@ public class RouteMapActivity extends AppCompatActivity
         if ( map == null )
         {
             Log.e( LOG_TAG, "setMapType: map is null");
+            return;
+        }
+        else if ( getMapType().equals(mapType) )
+        {
+            Log.i( LOG_TAG, "setMapType: already set, ignoring");
             return;
         }
 
@@ -521,7 +547,7 @@ public class RouteMapActivity extends AppCompatActivity
                 new TileOverlayOptions().tileProvider(
                     new OfflineTileProvider( this,
                         getString(R.string.map_type_osm_street),
-                        getString(R.string.osm_street_base_url)) ) );
+                        getString(R.string.osm_street_base_url), false ) ) );
         }
         else if ( mapType.equals( getString(R.string.map_type_osm_cycle) ) )
         {
@@ -530,7 +556,7 @@ public class RouteMapActivity extends AppCompatActivity
                 new TileOverlayOptions().tileProvider(
                     new OfflineTileProvider( this,
                         getString(R.string.map_type_osm_cycle),
-                        getString(R.string.osm_cycle_base_url) ) ) );
+                        getString(R.string.osm_cycle_base_url), false ) ) );
         }
         else
         {

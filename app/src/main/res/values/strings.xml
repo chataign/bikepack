@@ -48,6 +48,7 @@
     <string name="menu_delete">"Delete"</string>
     <string name="menu_save">"Save"</string>
     <string name="menu_show_map">"Show map"</string>
+    <string name="menu_map_download">"Download map"</string>
     <string name="menu_map_layers">"Map layers"</string>
     <string name="menu_toggle_elevation">"Toggle elevation"</string>
     <string name="menu_add_waypoint">Add waypoint</string>
