@@ -5,13 +5,11 @@ import android.arch.persistence.room.Room;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.databinding.DataBindingUtil;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -21,6 +19,9 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.LinearLayout;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -34,6 +35,7 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.android.gms.maps.model.TileOverlay;
 import com.google.android.gms.maps.model.TileOverlayOptions;
 import com.google.maps.android.SphericalUtil;
 
@@ -57,6 +59,7 @@ public class RouteMapActivity extends AppCompatActivity
     private static final int BOUNDS_PADDING_PX = 100;
 
     private GoogleMap map=null;
+    private TileOverlay mapOverlay=null;
     private Route route=null;
     private Marker mapTouchedMarker =null;
     private Polyline selectionPolyline =null;
@@ -446,29 +449,55 @@ public class RouteMapActivity extends AppCompatActivity
 
     private void selectMapLayer()
     {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this)
-            .setTitle(R.string.map_layer_dialog_title)
-            .setItems(R.array.map_type_names, new DialogInterface.OnClickListener() {
-                public void onClick(DialogInterface dialog, int which)
-                {
-                    String[] mapTypes = getResources().getStringArray(R.array.map_type_names);
-                    setMapType( map, mapTypes[which] );
-                    dialog.dismiss();
-                }
-            });
+        RadioGroup radioGroup = (RadioGroup) getLayoutInflater().inflate(R.layout.map_types, null );
 
-        AlertDialog layerDialog = builder.create();
-        layerDialog.show();
+        final AlertDialog layerTypeDialog = new AlertDialog.Builder(this)
+                .setTitle(R.string.map_layer_dialog_title)
+                .setView(radioGroup)
+                .create();
+
+        final String[] mapTypes = getResources().getStringArray(R.array.map_type_names);
+
+        String currentMapType = getPreferences(Context.MODE_PRIVATE).getString(
+                getString(R.string.preferences_map_type),
+                getString(R.string.map_type_google_map) );
+
+        for ( final String mapType : mapTypes )
+        {
+            RadioButton radioButton = (RadioButton) getLayoutInflater().inflate(R.layout.map_types_button, null );
+            radioButton.setText(mapType);
+            radioButton.setChecked( mapType.equals(currentMapType) );
+            radioButton.setOnClickListener( new RadioButton.OnClickListener() {
+                public void onClick(View view)
+                {
+                    setMapType( map, mapType );
+                    layerTypeDialog.dismiss();
+                }
+            } );
+            radioGroup.addView(radioButton);
+        }
+
+        layerTypeDialog.show();
     }
 
     private void setMapType( GoogleMap map, String mapType )
     {
+        Log.i( LOG_TAG, "setting map type=" + mapType );
+
         if ( map == null )
         {
             Log.e( LOG_TAG, "setMapType: map is null");
             return;
         }
-        else if ( mapType.equals( getString(R.string.map_type_google_map) ) )
+
+        if ( mapOverlay != null )
+        {
+            Log.i( LOG_TAG, "removing tile overlay" );
+            mapOverlay.remove();
+            mapOverlay = null;
+        }
+
+        if ( mapType.equals( getString(R.string.map_type_google_map) ) )
         {
             map.setMapType( GoogleMap.MAP_TYPE_NORMAL );
         }
@@ -487,16 +516,21 @@ public class RouteMapActivity extends AppCompatActivity
         else if ( mapType.equals( getString(R.string.map_type_osm_street) ) )
         {
             map.setMapType(GoogleMap.MAP_TYPE_NONE);
-            map.addTileOverlay(
-                    new TileOverlayOptions().tileProvider(
-                            new MapTileProvider( getString(R.string.osm_street_base_url)) ) );
+            mapOverlay = map.addTileOverlay(
+                new TileOverlayOptions().tileProvider(
+                    new MapTileProvider( getString(R.string.osm_street_base_url)) ) );
         }
         else if ( mapType.equals( getString(R.string.map_type_osm_cycle) ) )
         {
             map.setMapType(GoogleMap.MAP_TYPE_NONE);
-            map.addTileOverlay(
-                    new TileOverlayOptions().tileProvider(
-                            new MapTileProvider( getString(R.string.osm_cycle_base_url)) ) );
+            mapOverlay = map.addTileOverlay(
+                new TileOverlayOptions().tileProvider(
+                    new MapTileProvider( getString(R.string.osm_cycle_base_url)) ) );
+        }
+        else
+        {
+            Log.w( LOG_TAG, "unknown map type=" + mapType );
+            return;
         }
 
         getPreferences(Context.MODE_PRIVATE)

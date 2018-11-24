@@ -28,7 +28,7 @@ public class MapTileProvider extends UrlTileProvider
                 .replace("{x}",""+x)
                 .replace("{y}",""+y) );
 
-            Log.i( LOG_TAG, "url="+url );
+            //Log.i( LOG_TAG, "url="+url );
             return url;
         }
         catch ( MalformedURLException e )
