@@ -49,7 +49,7 @@ class FileStorageManager
         {
             File oldestFile = fileQueue.remove();
             double oldestMb = oldestFile.length() / 1e6;
-            Log.i( LOG_TAG, "deleting file=" + oldestFile.getName() + " with size=" + oldestMb + "Mb" );
+            Log.i( LOG_TAG, "deleting=" + oldestFile.getName() + " with size=" + oldestMb + "Mb" );
             if ( oldestFile.delete() == false ) Log.e( LOG_TAG, "failed to delete file=" + oldestFile.getName() );
             sizeMb -= oldestMb;
         }
@@ -57,7 +57,7 @@ class FileStorageManager
         fileQueue.add(file);
         sizeMb += fileMb;
 
-        Log.i( LOG_TAG, String.format( "added file=%s, storage size=%.1f/%.1fMb (%d%%)",
+        Log.i( LOG_TAG, String.format( "added=%s, storage: %.1f/%.1fMb (%d%%)",
                 file.getName(), sizeMb, maxStorageMb,
                 Math.round(100*sizeMb/maxStorageMb) ) );
     }
