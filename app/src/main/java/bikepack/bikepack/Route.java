@@ -116,7 +116,7 @@ public class Route implements Parcelable
     {
         this( parcel.readInt(), // routeId
             parcel.readString(), // routeName
-            parcel.readString(), // authorname
+            parcel.readString(), // authorName
             parcel.readString(), // authorLink
             new Date( parcel.readLong() ), // dateCreated
             new Date( parcel.readLong() ), // dateAdded

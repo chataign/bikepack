@@ -6,12 +6,6 @@ import android.util.Log;
 
 import java.util.List;
 
-import bikepack.bikepack.AppDatabase;
-import bikepack.bikepack.GlobalPosition;
-import bikepack.bikepack.Metadata;
-import bikepack.bikepack.NamedGlobalPosition;
-import bikepack.bikepack.Route;
-
 class CreateRouteQuery extends AsyncTask< Void, Void, Route>
 {
     interface Listener

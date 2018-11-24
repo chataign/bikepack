@@ -1,10 +1,10 @@
 package bikepack.bikepack;
 
-public class DistanceFormater
+class DistanceFormatter
 {
     private boolean force_meters=false;
 
-    DistanceFormater forceMeters( boolean force_meters ) { this.force_meters = force_meters; return this; }
+    DistanceFormatter forceMeters(boolean force_meters ) { this.force_meters = force_meters; return this; }
 
     String format( float distance )
     {

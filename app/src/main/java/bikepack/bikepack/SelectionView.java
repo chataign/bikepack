@@ -1,6 +1,7 @@
 package bikepack.bikepack;
 
 import android.content.Context;
+import android.content.res.TypedArray;
 import android.databinding.DataBindingUtil;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -12,24 +13,33 @@ import android.widget.RelativeLayout;
 
 import bikepack.bikepack.databinding.SelectionViewBinding;
 
+// Must be declared public to be used in layouts
 public class SelectionView extends RelativeLayout
 {
     interface Listener
     {
+        void onSelectionTouched( float pixelX );
         void onSelectionClicked( float leftX, float rightX );
         void onSelectionUpdated( float leftX, float rightX );
     }
 
     private final static String LOG_TAG = "SelectionView";
+    private final static float DEFAULT_MIN_WIDTH = 100;
 
-    private final float MIN_WIDTH = 100;
     private final SelectionViewBinding binding;
-    private float leftX=0, rightX=0;
+    private float left =0, right =0;
     private Listener listener = null;
+    private final float minWidth;
+    private boolean updating=false;
 
     SelectionView(Context context, AttributeSet attrs)
     {
         super(context, attrs);
+
+        TypedArray attributes = context.getTheme().obtainStyledAttributes(
+                attrs, R.styleable.SelectionView,0, 0);
+
+        minWidth = attributes.getDimension( R.styleable.SelectionView_min_width, DEFAULT_MIN_WIDTH );
 
         LayoutInflater inflater = LayoutInflater.from(context);
         binding = DataBindingUtil.inflate(inflater, R.layout.selection_view, this, true);
@@ -42,7 +52,7 @@ public class SelectionView extends RelativeLayout
                 {
                     Log.i( LOG_TAG, "onDoubleTapEvent" );
                     if ( listener == null ) return false;
-                    listener.onSelectionClicked(leftX,rightX);
+                    listener.onSelectionClicked(left, right);
                     return true;
                 }
             } );
@@ -58,9 +68,25 @@ public class SelectionView extends RelativeLayout
             @Override
             public boolean onTouch( View view, MotionEvent event )
             {
-                float newLeftX = leftX + event.getX();
-                if ( ( rightX - newLeftX ) < MIN_WIDTH ) return false;
-                update( newLeftX, rightX );
+                float newLeft = event.getRawX(); //left + event.getX();
+
+                if ( ( right - newLeft ) < minWidth )
+                    return false; // don't allow resizing beyond minWidth
+
+                switch( event.getAction() )
+                {
+                    case MotionEvent.ACTION_DOWN:
+                    case MotionEvent.ACTION_MOVE:
+                        if ( listener != null ) listener.onSelectionTouched(newLeft);
+                        updateBounds( newLeft, right);
+                        updating=true;
+                        return true;
+                    case MotionEvent.ACTION_UP:
+                        if ( updating && listener != null ) listener.onSelectionUpdated(left, right);
+                        updating=false;
+                        return false;
+                }
+
                 return true;
             }
         } );
@@ -70,10 +96,26 @@ public class SelectionView extends RelativeLayout
             @Override
             public boolean onTouch( View view, MotionEvent event )
             {
-                float newRightX = rightX + event.getX();
-                if ( ( newRightX - leftX ) < MIN_WIDTH ) return false;
-                update( leftX, newRightX );
-                return true;
+                float newRight = event.getRawX(); //right + event.getX();
+
+                if ( ( newRight - left) < minWidth )
+                    return false; // don't allow resizing beyond minWidth
+
+                switch( event.getAction() )
+                {
+                    case MotionEvent.ACTION_DOWN:
+                    case MotionEvent.ACTION_MOVE:
+                        if ( listener != null ) listener.onSelectionTouched(newRight);
+                        updateBounds(left, newRight );
+                        updating=true;
+                        return true;
+                    case MotionEvent.ACTION_UP:
+                        if ( updating && listener != null ) listener.onSelectionUpdated(left, right);
+                        updating=false;
+                        return false;
+                }
+
+                return false;
             }
         } );
     }
@@ -83,24 +125,32 @@ public class SelectionView extends RelativeLayout
         this.listener = listener;
     }
 
-    void update( float leftX, float rightX )
+    void updateBounds( float newLeft, float newRight )
     {
-        if ( leftX > rightX )
+        if ( newLeft > newRight )
         {
-            update( rightX, leftX );
+            updateBounds( newRight, newLeft );
             return;
         }
 
-        this.leftX = leftX;
-        this.rightX = rightX;
+        this.left = newLeft;
+        this.right = newRight;
 
-        binding.rectangle.setX( (leftX+rightX)/2 );
-        binding.rectangle.setScaleX( (rightX-leftX) / binding.rectangle.getWidth() );
-        binding.rectangle.setScaleY( this.getHeight() / binding.rectangle.getHeight() );
+        draw();
+    }
 
-        binding.leftHandle.setX( leftX );
-        binding.rightHandle.setX( rightX - binding.rightHandle.getWidth()/2 );
+    private void draw()
+    {
+        final float H = this.getMeasuredHeight() + this.getPaddingTop() + this.getPaddingBottom();
 
-        if ( listener != null ) listener.onSelectionUpdated(leftX,rightX);
+        binding.rectangle.setX( (left+right)/2 - binding.rectangle.getWidth()/2 );
+        binding.rectangle.setScaleX( (right - left) / binding.rectangle.getWidth() );
+        binding.rectangle.setScaleY( H / binding.rectangle.getHeight() );
+
+        binding.leftHandle.setX( left - binding.leftHandle.getWidth()/2 );
+        binding.leftHandle.setScaleY( H / binding.leftHandle.getHeight() );
+
+        binding.rightHandle.setX( right - binding.rightHandle.getWidth()/2 );
+        binding.rightHandle.setScaleY( H / binding.rightHandle.getHeight() );
     }
 }

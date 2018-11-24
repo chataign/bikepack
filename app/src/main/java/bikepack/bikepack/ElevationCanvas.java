@@ -19,12 +19,6 @@ public class ElevationCanvas extends View
 {
     static private final String LOG_TAG = "ElevationCanvas";
 
-    private final int DEFAULT_LINE_COLOR = Color.RED;
-    private final int DEFAULT_LINE_WIDTH = 2;
-    private final int DEFAULT_GUIDE_COLOR = Color.GRAY;
-    private final int DEFAULT_GUIDE_WIDTH = 1;
-    private final int DEFAULT_NUM_GUIDES = 4;
-
     private final Paint linePaint;
     private final Paint guidePaint;
     private final int num_guides;
@@ -40,8 +34,14 @@ public class ElevationCanvas extends View
         TypedArray attributes = context.getTheme().obtainStyledAttributes(
                 attrs, R.styleable.ElevationCanvas,0, 0);
 
-        int lineColor = attributes.getColor( R.styleable.ElevationCanvas_line_color, DEFAULT_LINE_COLOR );
-        int lineWidth = attributes.getColor( R.styleable.ElevationCanvas_line_width, DEFAULT_LINE_WIDTH );
+        final int DEFAULT_LINE_COLOR = Color.RED;
+        final int DEFAULT_LINE_WIDTH = 2;
+        final int DEFAULT_GUIDE_COLOR = Color.GRAY;
+        final int DEFAULT_GUIDE_WIDTH = 1;
+        final int DEFAULT_NUM_GUIDES = 4;
+
+        int lineColor = attributes.getColor( R.styleable.ElevationCanvas_line_color, DEFAULT_LINE_COLOR);
+        int lineWidth = attributes.getColor( R.styleable.ElevationCanvas_line_width, DEFAULT_LINE_WIDTH);
         int guideColor = attributes.getColor( R.styleable.ElevationCanvas_guide_color, DEFAULT_GUIDE_COLOR );
         int guideWidth = attributes.getColor( R.styleable.ElevationCanvas_guide_width, DEFAULT_GUIDE_WIDTH );
         num_guides = attributes.getColor( R.styleable.ElevationCanvas_num_guides, DEFAULT_NUM_GUIDES );
@@ -95,9 +95,9 @@ public class ElevationCanvas extends View
             void onBitmapReady( Bitmap bitmap );
         }
 
-        final ElevationCanvas plotCanvas;
-        final List<Trackpoint> trackpoints;
-        final Listener listener;
+        private final ElevationCanvas plotCanvas;
+        private final List<Trackpoint> trackpoints;
+        private final Listener listener;
 
         DrawBitmap(ElevationCanvas plotCanvas, List<Trackpoint> trackpoints, Listener listener )
         {

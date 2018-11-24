@@ -1,5 +1,7 @@
 package bikepack.bikepack;
 
+import android.support.annotation.NonNull;
+
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
@@ -8,6 +10,8 @@ import java.util.HashMap;
 
 class XmlUtils
 {
+    private XmlUtils() { } // Prevents instantiation
+
     static class XmlAttribute
     {
         final String name;
@@ -19,7 +23,7 @@ class XmlUtils
             this.value = value;
         }
 
-        XmlAttribute( XmlAttribute attribute )
+        XmlAttribute( @NonNull XmlAttribute attribute )
         {
             this( attribute.name, attribute.value );
         }
@@ -72,12 +76,12 @@ class XmlUtils
 
         String toString( int numTabs )
         {
-            String str = "\n";
-            for ( int i=0; i< numTabs; ++i ) str += "> ";
-            str += String.format("XmlObject[%s]=%s", tag, value );
-            for ( XmlAttribute attribute : attributes.values() ) str += attribute.toString();
-            for ( XmlObject child : children.values() ) str += child.toString(numTabs+1);
-            return str;
+            StringBuilder str = new StringBuilder("\n");
+            for ( int i=0; i< numTabs; ++i ) str.append("> ");
+            str.append(String.format("XmlObject[%s]=%s", tag, value));
+            for ( XmlAttribute attribute : attributes.values() ) str.append(attribute.toString());
+            for ( XmlObject child : children.values() ) str.append(child.toString(numTabs + 1));
+            return str.toString();
         }
     }
 

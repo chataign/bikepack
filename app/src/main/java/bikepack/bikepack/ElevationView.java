@@ -51,7 +51,6 @@ public class ElevationView extends RelativeLayout
             this.trackpoints = trackpoints;
             this.points = new ArrayList<>(trackpoints.size());
             this.distances = new ArrayList<>(trackpoints.size());
-            this.distances.add(0.0f);
 
             for (int i=0; i < trackpoints.size(); ++i)
             {
@@ -97,7 +96,7 @@ public class ElevationView extends RelativeLayout
     static private final String LOG_TAG = "ElevationView";
 
     private ElevationData data = null;
-    private ElevationViewBinding layoutBinding = null;
+    private final ElevationViewBinding layoutBinding;
     private Listener listener = null;
 
     ElevationView(Context context, AttributeSet attrs) {
@@ -139,6 +138,12 @@ public class ElevationView extends RelativeLayout
 
     void setTrackpoints(@NonNull final List<Trackpoint> trackpoints, final Listener listener)
     {
+        if ( trackpoints == null )
+        {
+            Log.e( LOG_TAG, "trackpoints are null");
+            return;
+        }
+
         Log.i( LOG_TAG, "setTrackpoints size=" + trackpoints.size() );
 
         int canvasLeft = getPaddingLeft();
@@ -196,10 +201,16 @@ public class ElevationView extends RelativeLayout
                 data.getTrackpointsBetween( leftX, rightX ),
                 data.getPointsBetween( leftX, rightX ) );
 
-        layoutBinding.selectionView.update( leftX, rightX );
+        layoutBinding.selectionView.updateBounds( leftX, rightX );
         layoutBinding.selectionView.setVisibility(VISIBLE);
         layoutBinding.selectionView.setListener(new SelectionView.Listener()
         {
+            @Override
+            public void onSelectionTouched(float pixelX)
+            {
+                listener.onValueTouched( data.getTrackpoint(pixelX) );
+            }
+
             @Override
             public void onSelectionClicked(float leftX, float rightX) {
 
@@ -218,9 +229,15 @@ public class ElevationView extends RelativeLayout
             {
                 //Log.i( LOG_TAG, "onSelectionUpdated" );
 
-                listener.onSelectionUpdated(
-                        data.getTrackpointsBetween( leftX, rightX ),
-                        data.getPointsBetween( leftX, rightX ) );
+                long time1 = System.currentTimeMillis();
+                List<Trackpoint> trackpointBetween = data.getTrackpointsBetween( leftX, rightX );
+                List<LatLng> pointsBetween = data.getPointsBetween( leftX, rightX );
+                long time2 = System.currentTimeMillis();
+
+                listener.onSelectionUpdated( trackpointBetween, pointsBetween );
+                long time3 = System.currentTimeMillis();
+
+                Log.i( LOG_TAG, "subList="+(time2-time1)+ " onSelectionUpdated="+(time3-time2) );
             }
         });
     }
@@ -235,12 +252,12 @@ public class ElevationView extends RelativeLayout
         if ( data == null ) return;
 
         Trackpoint trackpoint = data.getTrackpoint(pixelX);
-        layoutBinding.elevationText.setText(new DistanceFormater().forceMeters(true).format(trackpoint.elevation));
+        layoutBinding.elevationText.setText(new DistanceFormatter().forceMeters(true).format(trackpoint.elevation));
         layoutBinding.elevationText.setVisibility(VISIBLE);
         layoutBinding.elevationLabel.setVisibility(VISIBLE);
 
         float distance = data.getDistance(pixelX);
-        layoutBinding.distanceText.setText(new DistanceFormater().format(distance));
+        layoutBinding.distanceText.setText(new DistanceFormatter().format(distance));
         layoutBinding.distanceText.setVisibility(VISIBLE);
         layoutBinding.distanceLabel.setVisibility(VISIBLE);
 

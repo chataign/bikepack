@@ -15,7 +15,7 @@ import java.util.List;
 
 import static bikepack.bikepack.XmlUtils.readNext;
 
-public class GpxFileParser extends AsyncTask< Void, Void, Void >
+class GpxFileParser extends AsyncTask< Void, Void, Void >
 {
     interface Listener
     {

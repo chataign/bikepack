@@ -15,13 +15,14 @@ import bikepack.bikepack.databinding.RouteListItemBinding;
 
 class RouteAdapter extends ArrayAdapter<Route>
 {
-    RouteListItemBinding listItem=null;
+    private RouteListItemBinding listItem=null;
 
     RouteAdapter(@NonNull Context context, @NonNull List<Route> routes )
     {
         super( context, 0 , routes );
     }
 
+    @NonNull
     @Override
     public View getView(int position, @Nullable View view, @NonNull ViewGroup parent)
     {
@@ -37,7 +38,7 @@ class RouteAdapter extends ArrayAdapter<Route>
         {
             listItem.routeName.setText( route.routeName );
             listItem.authorName.setText( route.authorName );
-            listItem.routeInfo.setText( new DistanceFormater().format(route.totalDistance) );
+            listItem.routeInfo.setText( new DistanceFormatter().format(route.totalDistance) );
         }
 
         return view;

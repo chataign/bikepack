@@ -6,7 +6,7 @@ import android.view.View;
 
 import bikepack.bikepack.databinding.RouteInfoItemBinding;
 
-public class RouteInfoItem
+class RouteInfoItem
 {
     final String label;
     final String value;

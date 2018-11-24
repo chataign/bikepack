@@ -20,16 +20,13 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-import bikepack.bikepack.CreateRouteQuery;
-import bikepack.bikepack.GetRoutesQuery;
-
 public class RouteListActivity extends AppCompatActivity
 {
-    public  static final int ACTION_SELECT_ROUTE_FILE = 1;
+    private static final int ACTION_SELECT_ROUTE_FILE = 1;
     private static final String LOG_TAG = "RouteListActivity";
 
-    AppDatabase database;
-    RouteAdapter routesAdapter;
+    private AppDatabase database;
+    private RouteAdapter routesAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)

@@ -3,7 +3,7 @@ package bikepack.bikepack;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.maps.android.SphericalUtil;
 
-public class GlobalPosition
+class GlobalPosition
 {
     final double latitude;
     final double longitude;

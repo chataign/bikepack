@@ -17,8 +17,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 
-import bikepack.bikepack.DeleteRouteQuery;
-import bikepack.bikepack.UpdateRouteQuery;
 import bikepack.bikepack.databinding.RouteEditBinding;
 import bikepack.bikepack.databinding.RouteInfoActivityBinding;
 
@@ -63,7 +61,7 @@ public class RouteInfoActivity extends AppCompatActivity
         super.onSaveInstanceState(bundle);
     }
 
-    void onRouteReceived( Route route )
+    private void onRouteReceived( Route route )
     {
         if ( route == null )
         {
@@ -71,13 +69,13 @@ public class RouteInfoActivity extends AppCompatActivity
             this.finish();
         }
 
-        DistanceFormater formater = new DistanceFormater();
+        DistanceFormatter formatter = new DistanceFormatter();
 
-        String totalDistance = formater.format(route.totalDistance);
-        String totalAscent = formater.forceMeters(true).format(route.totalAscent);
-        String totalDescent = formater.forceMeters(true).format(route.totalDescent);
-        String highestElevation = formater.forceMeters(true).format(route.highestElevation);
-        String lowestElevation = formater.forceMeters(true).format(route.lowestElevation);
+        String totalDistance = formatter.format(route.totalDistance);
+        String totalAscent = formatter.forceMeters(true).format(route.totalAscent);
+        String totalDescent = formatter.forceMeters(true).format(route.totalDescent);
+        String highestElevation = formatter.forceMeters(true).format(route.highestElevation);
+        String lowestElevation = formatter.forceMeters(true).format(route.lowestElevation);
         String dateCreated = new SimpleDateFormat("dd/MM/yy").format(route.dateCreated);
 
         List<RouteInfoItem> infoItems = new ArrayList<>();

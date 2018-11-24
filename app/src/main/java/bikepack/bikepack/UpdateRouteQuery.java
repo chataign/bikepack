@@ -44,7 +44,7 @@ class UpdateRouteQuery extends AsyncTask< Void, Void, Route>
         try
         {
             database.routes().update( routeId, routeName, authorName, authorLink );
-            return database.routes().find((int)routeId);
+            return database.routes().find(routeId);
         }
         catch( Exception error )
         {
