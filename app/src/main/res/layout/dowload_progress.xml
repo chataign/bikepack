@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<layout xmlns:android="http://schemas.android.com/apk/res/android">
+
+<RelativeLayout
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="10pt">
+
+    <TextView
+        android:id="@+id/progress_message"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentLeft="true"
+        android:paddingTop="5pt"
+        android:paddingBottom="5pt"/>
+
+    <TextView
+        android:id="@+id/progress_percent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentTop="true"
+        android:paddingTop="5pt"
+        android:paddingBottom="5pt"/>
+
+    <ProgressBar
+        android:id="@+id/progress_percent_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@id/progress_message"
+        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+        android:max="100"
+        android:progress="0" />
+
+    <TextView
+        android:id="@+id/download_load_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@id/progress_percent_bar"
+        android:paddingTop="5pt"
+        android:paddingBottom="5pt"
+        android:text="Download load"/>
+
+    <TextView
+        android:id="@+id/download_load_percent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_below="@id/progress_percent_bar"
+        android:paddingTop="5pt"
+        android:paddingBottom="5pt"
+        android:text="Download load"/>
+
+    <ProgressBar
+        android:id="@+id/download_percent_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@id/download_load_label"
+        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+        android:max="100"
+        android:progress="0"/>
+
+    <TextView
+        android:id="@+id/write_load_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@id/download_percent_bar"
+        android:paddingTop="5pt"
+        android:paddingBottom="5pt"
+        android:text="Write load"/>
+
+    <TextView
+        android:id="@+id/write_load_percent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_below="@id/download_percent_bar"
+        android:paddingTop="5pt"
+        android:paddingBottom="5pt"/>
+
+    <ProgressBar
+        android:id="@+id/write_load_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@id/write_load_label"
+        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+        android:max="100"
+        android:progress="0"
+        android:rotation="180" />
+
+</RelativeLayout>
+
+</layout>
