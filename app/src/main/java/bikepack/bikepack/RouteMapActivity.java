@@ -19,7 +19,6 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.Toast;
@@ -39,6 +38,7 @@ import com.google.android.gms.maps.model.TileOverlay;
 import com.google.android.gms.maps.model.TileOverlayOptions;
 import com.google.maps.android.SphericalUtil;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -516,16 +516,21 @@ public class RouteMapActivity extends AppCompatActivity
         else if ( mapType.equals( getString(R.string.map_type_osm_street) ) )
         {
             map.setMapType(GoogleMap.MAP_TYPE_NONE);
+
             mapOverlay = map.addTileOverlay(
                 new TileOverlayOptions().tileProvider(
-                    new MapTileProvider( getString(R.string.osm_street_base_url)) ) );
+                    new OfflineTileProvider( this,
+                        getString(R.string.map_type_osm_street),
+                        getString(R.string.osm_street_base_url)) ) );
         }
         else if ( mapType.equals( getString(R.string.map_type_osm_cycle) ) )
         {
             map.setMapType(GoogleMap.MAP_TYPE_NONE);
             mapOverlay = map.addTileOverlay(
                 new TileOverlayOptions().tileProvider(
-                    new MapTileProvider( getString(R.string.osm_cycle_base_url)) ) );
+                    new OfflineTileProvider( this,
+                        getString(R.string.map_type_osm_cycle),
+                        getString(R.string.osm_cycle_base_url) ) ) );
         }
         else
         {
