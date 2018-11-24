@@ -12,8 +12,9 @@
             android:src="@drawable/selection_rectangle"
             android:layout_centerVertical="true"
             android:layout_width="wrap_content"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:clickable="true"
+            android:focusable="true"
             android:alpha="0.5" />
 
         <ImageView
@@ -21,8 +22,9 @@
             android:src="@drawable/selection_handle"
             android:layout_centerVertical="true"
             android:layout_width="wrap_content"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:clickable="true"
+            android:focusable="true"
             android:alpha="0.0" />
 
         <ImageView
@@ -30,8 +32,9 @@
             android:src="@drawable/selection_handle"
             android:layout_centerVertical="true"
             android:layout_width="wrap_content"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:clickable="true"
+            android:focusable="true"
             android:alpha="0.0"/>
 
     </RelativeLayout>

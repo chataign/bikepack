@@ -5,11 +5,15 @@
         <item>2</item>
         <item>3</item>
         <item>4</item>
+        <item>5</item>
+        <item>6</item>
     </array>
     <array name="map_type_names">
-        <item>Normal</item>
-        <item>Satellite</item>
-        <item>Terrain</item>
-        <item>Hybrid</item>
+        <item>@string/map_type_google_map</item>
+        <item>@string/map_type_google_satellite</item>
+        <item>@string/map_type_google_terrain</item>
+        <item>@string/map_type_google_hybrid</item>
+        <item>@string/map_type_osm_street</item>
+        <item>@string/map_type_osm_cycle</item>
     </array>
 </resources>

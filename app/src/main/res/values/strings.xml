@@ -10,30 +10,40 @@
     <string name="routes_mime_types">application/*</string>
     <string name="route_extra">route</string>
 
-    <string name="route_deleted">Route deleted</string>
     <string name="route_created">Route created</string>
     <string name="route_loading_failed">Failed to load routes</string>
     <string name="route_creation_failed">Failed to create route</string>
 
     <string name="map_layer_dialog_title">"Select map layer"</string>
 
-    <string name="route_import_dialog_title">"Importing route"</string>
-    <string name="route_import_dialog_parse_gpx">"Parsing GPX file..."</string>
-    <string name="route_import_dialog_write_db">"Writing to database..."</string>
+    <string name="route_import_dialog_title">Importing route</string>
+    <string name="route_import_dialog_parse_gpx">Parsing GPX file…</string>
+    <string name="route_import_dialog_write_db">Writing to database…</string>
 
-    <string name="route_delete_dialog_title">"Delete this route?"</string>
-    <string name="route_delete_dialog_message">"This route will be permantently removed from your library."</string>
+    <string name="route_delete_dialog_title">Delete this route?</string>
+    <string name="route_delete_dialog_message">This route will be permanently removed from your library.</string>
 
-    <string name="route_edit_dialog_title">"Edit route"</string>
-    <string name="route_save_selection_title">"Save selection"</string>
-    <string name="route_save_selection_subtitle">"Move selection edges to adjust"</string>
-    <string name="waypoint_create_dialog_title">"Create waypoint"</string>
+    <string name="route_edit_dialog_title">Edit route</string>
+    <string name="route_save_selection_title">Save selection</string>
+    <string name="route_save_selection_subtitle">Drag edges to adjust</string>
+    <string name="waypoint_create_action_mode_title">Create waypoint</string>
+    <string name="waypoint_create_dialog_title">Create waypoint</string>
+    <string name="waypoint_created_toast_msg">Waypoint created</string>
 
     <string name="dialog_ok">"OK"</string>
     <string name="dialog_cancel">"CANCEL"</string>
 
+    <string name="map_type_google_map">Google Map</string>
+    <string name="map_type_google_satellite">Google Satellite</string>
+    <string name="map_type_google_terrain">Google Terrain</string>
+    <string name="map_type_google_hybrid">Google Hybrid</string>
+    <string name="map_type_osm_street">OpenStreetMap</string>
+    <string name="map_type_osm_cycle">OpenCycleMap</string>
+
+    <string name="osm_street_base_url">http://a.tile.openstreetmap.org/{zoom}/{x}/{y}.png</string>
+    <string name="osm_cycle_base_url">https://tile.thunderforest.com/cycle/{zoom}/{x}/{y}.png?apikey=9a34bb962cce483e80367510250f2214</string>
+
     <string name="menu_sort">"Sort"</string>
-    <string name="menu_filter">"Filter"</string>
     <string name="menu_edit">"Edit"</string>
     <string name="menu_delete">"Delete"</string>
     <string name="menu_save">"Save"</string>
