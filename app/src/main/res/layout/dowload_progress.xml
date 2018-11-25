@@ -12,25 +12,38 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
+        android:layout_alignParentLeft="true"/>
+
+    <TextView
+        android:id="@+id/estimated_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_alignParentLeft="true"
-        android:paddingTop="5pt"
-        android:paddingBottom="5pt"/>
+        android:layout_below="@id/progress_message"/>
+
+    <TextView
+        android:id="@+id/estimated_size"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@id/estimated_time"
+        android:paddingBottom="2pt"/>
 
     <TextView
         android:id="@+id/progress_percent"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentRight="true"
-        android:layout_alignParentTop="true"
-        android:paddingTop="5pt"
-        android:paddingBottom="5pt"/>
+        android:layout_below="@id/estimated_time"
+        android:paddingBottom="2pt"
+        android:text="0%"/>
 
     <ProgressBar
         android:id="@+id/progress_percent_bar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentLeft="true"
-        android:layout_below="@id/progress_message"
+        android:layout_below="@id/estimated_size"
         style="@style/Widget.AppCompat.ProgressBar.Horizontal"
         android:max="100"
         android:progress="0" />
@@ -42,7 +55,7 @@
         android:layout_alignParentLeft="true"
         android:layout_below="@id/progress_percent_bar"
         android:paddingTop="5pt"
-        android:paddingBottom="5pt"
+        android:paddingBottom="2pt"
         android:text="Download load"/>
 
     <TextView
@@ -52,8 +65,8 @@
         android:layout_alignParentRight="true"
         android:layout_below="@id/progress_percent_bar"
         android:paddingTop="5pt"
-        android:paddingBottom="5pt"
-        android:text="Download load"/>
+        android:paddingBottom="2pt"
+        android:text="0%"/>
 
     <ProgressBar
         android:id="@+id/download_percent_bar"
@@ -72,7 +85,7 @@
         android:layout_alignParentLeft="true"
         android:layout_below="@id/download_percent_bar"
         android:paddingTop="5pt"
-        android:paddingBottom="5pt"
+        android:paddingBottom="2pt"
         android:text="Write load"/>
 
     <TextView
@@ -82,7 +95,8 @@
         android:layout_alignParentRight="true"
         android:layout_below="@id/download_percent_bar"
         android:paddingTop="5pt"
-        android:paddingBottom="5pt"/>
+        android:paddingBottom="2pt"
+        android:text="0%"/>
 
     <ProgressBar
         android:id="@+id/write_load_bar"
