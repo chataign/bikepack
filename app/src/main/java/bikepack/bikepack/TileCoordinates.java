@@ -32,8 +32,8 @@ class TileCoordinates
         double latitudeRad = Math.toRadians(location.latitude);
 
         long n = (long) Math.pow( 2, zoom );
-        long x = Math.round( n * (location.longitude + 180.0) / 360.0 );
-        long y = Math.round( n * (1 - ( Math.log( Math.tan(latitudeRad) + 1/Math.cos(latitudeRad)) / PI ) ) / 2 );
+        long x = (long)( n * (location.longitude + 180.0) / 360.0 );
+        long y = (long)( n * (1 - ( Math.log( Math.tan(latitudeRad) + 1/Math.cos(latitudeRad)) / PI ) ) / 2 );
 
         return new TileCoordinates(x,y,zoom);
     }
@@ -49,9 +49,9 @@ class TileCoordinates
 
             long numTiles=0;
 
-            for ( long x = southwestCoords.x; x <= northeastCoords.x; ++x )
+            for ( long x = southwestCoords.x; x <= northeastCoords.x; ++x ) // x is west to east
             {
-                for ( long y = northeastCoords.y; y <= southwestCoords.y; ++y )
+                for ( long y = northeastCoords.y; y <= southwestCoords.y; ++y ) // y is north to south
                 {
                     tiles.add( new TileCoordinates( x, y, zoomLevel) );
                     ++numTiles;
