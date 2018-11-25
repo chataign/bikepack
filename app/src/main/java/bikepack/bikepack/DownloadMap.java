@@ -7,7 +7,6 @@ import android.content.DialogInterface;
 import android.databinding.DataBindingUtil;
 import android.graphics.Bitmap;
 import android.os.AsyncTask;
-import android.text.Layout;
 import android.util.Log;
 import android.view.View;
 
@@ -33,39 +32,34 @@ class DownloadMap extends AsyncTask< Void, DownloadProgress, Void >
     private final Activity activity;
     private final String mapName;
     private final String baseUrl;
-    private final LatLngBounds mapBounds;
-    private final int minZoomLevel;
-    private final int maxZoomLevel;
+    private final List<TileCoordinates> tileCoordinates;
     private final Listener listener;
     private Exception error = null;
-    private AlertDialog dialog=null;
-    DowloadProgressBinding binding;
+    private AlertDialog downloadDialog=null;
+    private DowloadProgressBinding binding;
 
     DownloadMap( Activity activity,
                 String mapName, String baseUrl,
-                LatLngBounds mapBounds, int minZoomLevel, int maxZoomLevel,
+                List<TileCoordinates> tileCoordinates,
                 Listener listener )
     {
         this.activity = activity;
         this.mapName = mapName;
         this.baseUrl = baseUrl;
-        this.mapBounds = mapBounds;
-        this.minZoomLevel = minZoomLevel;
-        this.maxZoomLevel = maxZoomLevel;
+        this.tileCoordinates = tileCoordinates;
         this.listener = listener;
     }
 
     protected Void doInBackground(Void... nothing)
     {
         long startTime = System.currentTimeMillis();
-        double totalSizeMb=0;
-        double downloadTime=0;
-        double writeTime=0;
-        double totalTime=0;
+        float downloadedSizeMb=0;
+        long downloadTimeMs=0;
+        long writeTimeMs=0;
+        long totalTimeMs=0;
 
         try
         {
-            List<TileCoordinates> tileCoordinates = TileCoordinates.getTiles( mapBounds, 1, 13 );
             Log.i( LOG_TAG, String.format( "Downloading %d tiles...", tileCoordinates.size() ) );
 
             for ( int i=0; i< tileCoordinates.size(); ++i )
@@ -96,19 +90,19 @@ class DownloadMap extends AsyncTask< Void, DownloadProgress, Void >
                         tileBitmap.compress(Bitmap.CompressFormat.PNG, 100, fileStream);
                         long time2 = System.currentTimeMillis();
 
-                        downloadTime += (time1-time0);
-                        writeTime += (time2-time1);
-                        totalTime += (time2-time0);
+                        downloadTimeMs += (time1-time0);
+                        writeTimeMs += (time2-time1);
+                        totalTimeMs += (time2-time0);
 
                         publishProgress( new DownloadProgress( i, tileCoordinates.size(),
-                                totalSizeMb, downloadTime, writeTime, totalTime ) );
+                                downloadedSizeMb, downloadTimeMs, writeTimeMs, totalTimeMs ) );
                     }
 
                     double fileSizeMb = tileFile.length() / 1e6;
-                    totalSizeMb += fileSizeMb;
+                    downloadedSizeMb += fileSizeMb;
 
                     Log.i( LOG_TAG, String.format( "saved=%s size=%.2fMb total=%.1fMb",
-                            tileFilename, fileSizeMb, totalSizeMb ) );
+                            tileFilename, fileSizeMb, downloadedSizeMb ) );
             }
 
             if ( listener != null ) listener.onMapDownloaded();
@@ -131,19 +125,19 @@ class DownloadMap extends AsyncTask< Void, DownloadProgress, Void >
         View layout = activity.getLayoutInflater().inflate( R.layout.dowload_progress, null );
         binding = DataBindingUtil.bind(layout);
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(activity)
-            .setTitle("Downloading "+mapName)
-            .setView(layout)
-            .setNegativeButton(R.string.dialog_cancel, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        DownloadMap.this.cancel(true);
+        AlertDialog.Builder downloadDialogBuilder = new AlertDialog.Builder(activity)
+                .setTitle("Downloading "+mapName)
+                .setView(layout)
+                .setNegativeButton(R.string.dialog_cancel, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            DownloadMap.this.cancel(true);
+                        }
                     }
-                }
-            );
+                );
 
-        dialog = builder.create();
-        dialog.show();
+        downloadDialog = downloadDialogBuilder.create();
+        downloadDialog.show();
     }
 
     @Override
@@ -152,20 +146,7 @@ class DownloadMap extends AsyncTask< Void, DownloadProgress, Void >
         try
         {
             DownloadProgress progress = downloadProgresses[0];
-
-            int downloadTimePercent = (int)( 100*progress.downloadTime/(float)progress.totalTime );
-            int writeTimePercent = (int)( 100*progress.writeTime/(float)progress.totalTime );
-
-            binding.progressPercent.setText( String.format( "%d%%", progress.getPercent() ) );
-            binding.progressPercentBar.setProgress( progress.getPercent() );
-            binding.progressMessage.setText( String.format( "Downloaded %d/%d tiles",
-                    progress.numTilesDowloaded, progress.numTilesTotal ) );
-
-            binding.downloadLoadPercent.setText( String.format( "%d%%", downloadTimePercent ) );
-            binding.downloadPercentBar.setProgress( downloadTimePercent);
-
-            binding.writeLoadPercent.setText( String.format( "%d%%", writeTimePercent ) );
-            binding.writeLoadBar.setProgress( writeTimePercent );
+            progress.populateDialog(binding);
         }
         catch ( Exception e )
         {
@@ -177,14 +158,15 @@ class DownloadMap extends AsyncTask< Void, DownloadProgress, Void >
     @Override
     protected void onCancelled ( Void nothing )
     {
-        Log.w( LOG_TAG, "cancelled" );
-        dialog.dismiss();
+        Log.w( LOG_TAG, "onCancelled" );
+        if ( downloadDialog!=null ) downloadDialog.dismiss();
     }
 
     @Override
     protected void onPostExecute( Void nothing )
     {
-        dialog.dismiss();
+        Log.w( LOG_TAG, "onPostExecute" );
+        if ( downloadDialog!=null ) downloadDialog.dismiss();
         if ( error != null ) listener.onDownloadError( error.getMessage() );
         else if ( listener != null ) listener.onMapDownloaded();
     }
