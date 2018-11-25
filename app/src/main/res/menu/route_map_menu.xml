@@ -5,6 +5,12 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
+        android:title="@string/menu_map_download"
+        android:id="@+id/action_map_download"
+        android:icon="@drawable/ic_download_white_24px"
+        app:showAsAction="ifRoom" />
+
+    <item
         android:title="@string/menu_map_layers"
         android:id="@+id/action_select_layer"
         android:icon="@drawable/ic_layers_white_24px"
@@ -20,6 +26,12 @@
         android:title="@string/menu_add_waypoint"
         android:id="@+id/action_add_waypoint"
         android:icon="@drawable/ic_add_location_white_24px"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:title="@string/menu_map_storage"
+        android:id="@+id/action_map_storage"
+        android:icon="@drawable/ic_sd_storage_white_24px"
         app:showAsAction="ifRoom" />
 
 </menu>
