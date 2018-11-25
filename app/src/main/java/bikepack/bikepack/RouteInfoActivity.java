@@ -69,13 +69,11 @@ public class RouteInfoActivity extends AppCompatActivity
             this.finish();
         }
 
-        DistanceFormatter formatter = new DistanceFormatter();
-
-        String totalDistance = formatter.format(route.totalDistance);
-        String totalAscent = formatter.forceMeters(true).format(route.totalAscent);
-        String totalDescent = formatter.forceMeters(true).format(route.totalDescent);
-        String highestElevation = formatter.forceMeters(true).format(route.highestElevation);
-        String lowestElevation = formatter.forceMeters(true).format(route.lowestElevation);
+        String totalDistance = StringFormatter.formatDistance(route.totalDistance,false);
+        String totalAscent = StringFormatter.formatDistance(route.totalAscent,true);
+        String totalDescent = StringFormatter.formatDistance(route.totalDescent,true);
+        String highestElevation = StringFormatter.formatDistance(route.highestElevation,true);
+        String lowestElevation = StringFormatter.formatDistance(route.lowestElevation,true);
         String dateCreated = new SimpleDateFormat("dd/MM/yy").format(route.dateCreated);
 
         List<RouteInfoItem> infoItems = new ArrayList<>();

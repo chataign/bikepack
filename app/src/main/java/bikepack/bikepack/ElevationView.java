@@ -252,12 +252,12 @@ public class ElevationView extends RelativeLayout
         if ( data == null ) return;
 
         Trackpoint trackpoint = data.getTrackpoint(pixelX);
-        layoutBinding.elevationText.setText(new DistanceFormatter().forceMeters(true).format(trackpoint.elevation));
+        layoutBinding.elevationText.setText( StringFormatter.formatDistance(trackpoint.elevation,true) );
         layoutBinding.elevationText.setVisibility(VISIBLE);
         layoutBinding.elevationLabel.setVisibility(VISIBLE);
 
         float distance = data.getDistance(pixelX);
-        layoutBinding.distanceText.setText(new DistanceFormatter().format(distance));
+        layoutBinding.distanceText.setText( StringFormatter.formatDistance(distance,false) );
         layoutBinding.distanceText.setVisibility(VISIBLE);
         layoutBinding.distanceLabel.setVisibility(VISIBLE);
 

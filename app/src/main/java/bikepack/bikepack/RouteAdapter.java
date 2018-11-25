@@ -38,7 +38,7 @@ class RouteAdapter extends ArrayAdapter<Route>
         {
             listItem.routeName.setText( route.routeName );
             listItem.authorName.setText( route.authorName );
-            listItem.routeInfo.setText( new DistanceFormatter().format(route.totalDistance) );
+            listItem.routeInfo.setText( StringFormatter.formatDistance(route.totalDistance,false) );
         }
 
         return view;
