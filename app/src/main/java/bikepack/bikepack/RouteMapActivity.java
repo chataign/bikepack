@@ -38,6 +38,7 @@ import com.google.android.gms.maps.model.TileOverlay;
 import com.google.android.gms.maps.model.TileOverlayOptions;
 import com.google.maps.android.SphericalUtil;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -64,6 +65,7 @@ public class RouteMapActivity extends AppCompatActivity
     private Polyline selectionPolyline =null;
     private List<Marker> waypointMarkers=new ArrayList<>();
     private ActionMode actionMode=null;
+    private DownloadMap downloadMapTask=null;
 
     private List<Trackpoint> trackpoints=null;
     private List<Waypoint> waypoints=null;
@@ -262,7 +264,7 @@ public class RouteMapActivity extends AppCompatActivity
         });
 
         float selectionDistance = (float) SphericalUtil.computeLength(points);
-        actionMode.setTitle( "Selection: " + new DistanceFormatter().format(selectionDistance) );
+        actionMode.setTitle( "Selection: " + StringFormatter.formatDistance(selectionDistance,false) );
         actionMode.setSubtitle(R.string.route_save_selection_subtitle);
     }
 
@@ -274,7 +276,7 @@ public class RouteMapActivity extends AppCompatActivity
         selectionPolyline.setVisible(true);
 
         float selectionDistance = (float) SphericalUtil.computeLength(points);
-        actionMode.setTitle( "Selection: " + new DistanceFormatter().format(selectionDistance) );
+        actionMode.setTitle( "Selection: " + StringFormatter.formatDistance( selectionDistance,false ) );
     }
 
     @Override
@@ -409,19 +411,7 @@ public class RouteMapActivity extends AppCompatActivity
                 return true;
 
             case R.id.action_map_download:
-                LatLngBounds.Builder boundsBuilder = new LatLngBounds.Builder();
-                for ( Trackpoint trackpoint : trackpoints ) boundsBuilder.include( trackpoint.latlng );
-
-                String mapName = getMapType();
-                String baseUrl = null;
-
-                if ( mapName.equals( getString(R.string.map_type_osm_street) ) )
-                    baseUrl = getString(R.string.osm_street_base_url);
-                else if ( mapName.equals( getString(R.string.map_type_osm_cycle) ) )
-                    baseUrl = getString(R.string.osm_cycle_base_url);
-                else { Log.e( LOG_TAG, "can't download map="+mapName); return false; }
-
-                new DownloadMap(RouteMapActivity.this, mapName, baseUrl, boundsBuilder.build(), 1, 13, null ).execute();
+                downloadMap();
                 return true;
 
             case R.id.action_select_layer:
@@ -430,6 +420,14 @@ public class RouteMapActivity extends AppCompatActivity
 
             case R.id.action_add_waypoint:
                 createWaypoint();
+                return true;
+
+            case R.id.action_map_storage:
+                File files[] = getFilesDir().listFiles();
+                float totalSizeMb=0;
+                for ( File file : files ) totalSizeMb += file.length() / 1e6;
+                Log.i( LOG_TAG, String.format( "files=%d size=%s", +
+                        files.length, StringFormatter.formatFileSize(totalSizeMb) ) );
                 return true;
 
             default:
@@ -508,11 +506,6 @@ public class RouteMapActivity extends AppCompatActivity
         if ( map == null )
         {
             Log.e( LOG_TAG, "setMapType: map is null");
-            return;
-        }
-        else if ( getMapType().equals(mapType) )
-        {
-            Log.i( LOG_TAG, "setMapType: already set, ignoring");
             return;
         }
 
@@ -697,5 +690,46 @@ public class RouteMapActivity extends AppCompatActivity
                 map.setOnCameraMoveListener(null);
             }
         }).setTitle(R.string.waypoint_create_action_mode_title);
+    }
+
+    private void downloadMap()
+    {
+        final String mapName = getMapType();
+
+        final String baseUrl =
+                mapName.equals( getString(R.string.map_type_osm_street) ) ?
+                        getString(R.string.osm_street_base_url) :
+                        mapName.equals( getString(R.string.map_type_osm_cycle) ) ?
+                                getString(R.string.osm_cycle_base_url) :
+                                    null;
+
+        if ( baseUrl == null ) { Log.e( LOG_TAG, "can't download map="+mapName); return; }
+
+        LatLngBounds.Builder boundsBuilder = new LatLngBounds.Builder();
+        for ( Trackpoint trackpoint : trackpoints ) boundsBuilder.include( trackpoint.latlng );
+        final LatLngBounds mapBounds = boundsBuilder.build();
+
+        final List<TileCoordinates> tileCoordinates = TileCoordinates.getTiles( boundsBuilder.build(), 1, 12 );
+        float baseFileSizeMb = 0.05f; // 50Kb
+
+        String warningMessage = String.format( "This map contains %d tiles with an estimated size of %s",
+                tileCoordinates.size(), StringFormatter.formatFileSize(tileCoordinates.size()*baseFileSizeMb) );
+
+        AlertDialog.Builder warningDialogBuilder = new AlertDialog.Builder(this )
+                .setTitle( String.format( "Download map %s?", mapName) )
+                .setMessage(warningMessage)
+                .setNegativeButton( R.string.dialog_cancel, null )
+                .setPositiveButton( R.string.dialog_ok, new DialogInterface.OnClickListener()
+                {
+                    @Override
+                    public void onClick(final DialogInterface dialog, int id)
+                    {
+                        downloadMapTask = new DownloadMap(RouteMapActivity.this, mapName, baseUrl, tileCoordinates, null );
+                        downloadMapTask.execute();
+                    }
+                });
+
+        AlertDialog warningDialog = warningDialogBuilder.create();
+        warningDialog.show();
     }
 }
