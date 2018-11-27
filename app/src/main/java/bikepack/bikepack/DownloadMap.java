@@ -1,14 +1,8 @@
 package bikepack.bikepack;
 
-import android.app.Activity;
-import android.app.AlertDialog;
-import android.content.Context;
-import android.content.DialogInterface;
-import android.databinding.DataBindingUtil;
 import android.graphics.Bitmap;
 import android.os.AsyncTask;
 import android.util.Log;
-import android.view.View;
 
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.squareup.picasso.Picasso;
@@ -17,49 +11,46 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.util.List;
 
-import bikepack.bikepack.databinding.DowloadProgressBinding;
-
 class DownloadMap extends AsyncTask< Void, DownloadProgress, Void >
 {
     interface Listener
     {
         void onMapDownloaded();
+        void onProgressUpdate( DownloadProgress progress );
         void onDownloadError(String errorMessage);
     }
 
     static private final String LOG_TAG = "DownloadMap";
 
-    private final Activity activity;
+    private final File targetDirectory;
     private final String mapName;
     private final String baseUrl;
-    private final List<TileCoordinates> tileCoordinates;
+    private final LatLngBounds mapBounds;
     private final Listener listener;
-    private Exception error = null;
-    private AlertDialog downloadDialog=null;
-    private DowloadProgressBinding binding;
 
-    DownloadMap( Activity activity,
-                String mapName, String baseUrl,
-                List<TileCoordinates> tileCoordinates,
-                Listener listener )
+    private Exception error = null;
+
+    DownloadMap( File targetDirectory, String mapName, String baseUrl, LatLngBounds mapBounds, Listener listener )
     {
-        this.activity = activity;
+        this.targetDirectory = targetDirectory;
         this.mapName = mapName;
         this.baseUrl = baseUrl;
-        this.tileCoordinates = tileCoordinates;
+        this.mapBounds = mapBounds;
         this.listener = listener;
     }
 
     protected Void doInBackground(Void... nothing)
     {
         long startTime = System.currentTimeMillis();
-        float downloadedSizeMb=0;
-        long downloadTimeMs=0;
-        long writeTimeMs=0;
-        long totalTimeMs=0;
 
         try
         {
+            if ( !targetDirectory.exists() || !targetDirectory.isDirectory() )
+                throw new Exception("invalid target directory=" + targetDirectory.getAbsolutePath() );
+
+            final List<TileCoordinates> tileCoordinates = TileCoordinates.getTiles( mapBounds, 1, 12 );
+            DownloadProgress progress = new DownloadProgress( tileCoordinates.size() );
+
             Log.i( LOG_TAG, String.format( "Downloading %d tiles...", tileCoordinates.size() ) );
 
             for ( int i=0; i< tileCoordinates.size(); ++i )
@@ -69,7 +60,7 @@ class DownloadMap extends AsyncTask< Void, DownloadProgress, Void >
                     TileCoordinates tile = tileCoordinates.get(i);
 
                     String tileFilename = String.format("%s-%d-%d-%d.png", mapName, tile.zoom, tile.x, tile.y );
-                    File tileFile = activity.getFileStreamPath(tileFilename);
+                    File tileFile = new File( targetDirectory, tileFilename );
 
                     if ( !tileFile.exists() )
                     {
@@ -86,26 +77,23 @@ class DownloadMap extends AsyncTask< Void, DownloadProgress, Void >
 
                         if ( isCancelled() ) break;
 
-                        FileOutputStream fileStream = activity.openFileOutput( tileFilename, Context.MODE_PRIVATE );
+                        FileOutputStream fileStream = new FileOutputStream(tileFile); // TODO = activity.openFileOutput( tileFilename, Context.MODE_PRIVATE );
                         tileBitmap.compress(Bitmap.CompressFormat.PNG, 100, fileStream);
                         long time2 = System.currentTimeMillis();
 
-                        downloadTimeMs += (time1-time0);
-                        writeTimeMs += (time2-time1);
-                        totalTimeMs += (time2-time0);
-
-                        publishProgress( new DownloadProgress( i, tileCoordinates.size(),
-                                downloadedSizeMb, downloadTimeMs, writeTimeMs, totalTimeMs ) );
+                        progress.numTilesDowloaded = i;
+                        progress.downloadTimeMs += (time1-time0);
+                        progress.writeTimeMs += (time2-time1);
+                        progress.totalTimeMs += (time2-time0);
                     }
 
                     double fileSizeMb = tileFile.length() / 1e6;
-                    downloadedSizeMb += fileSizeMb;
+                    progress.downloadedSizeMb += fileSizeMb;
+                    publishProgress( progress );
 
                     Log.i( LOG_TAG, String.format( "saved=%s size=%.2fMb total=%.1fMb",
-                            tileFilename, fileSizeMb, downloadedSizeMb ) );
+                            tileFilename, fileSizeMb, progress.downloadedSizeMb ) );
             }
-
-            if ( listener != null ) listener.onMapDownloaded();
         }
         catch( Exception error )
         {
@@ -120,53 +108,22 @@ class DownloadMap extends AsyncTask< Void, DownloadProgress, Void >
     }
 
     @Override
-    protected void onPreExecute( )
+    protected void onProgressUpdate( DownloadProgress... progresses )
     {
-        View layout = activity.getLayoutInflater().inflate( R.layout.dowload_progress, null );
-        binding = DataBindingUtil.bind(layout);
-
-        AlertDialog.Builder downloadDialogBuilder = new AlertDialog.Builder(activity)
-                .setTitle("Downloading "+mapName)
-                .setView(layout)
-                .setNegativeButton(R.string.dialog_cancel, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            DownloadMap.this.cancel(true);
-                        }
-                    }
-                );
-
-        downloadDialog = downloadDialogBuilder.create();
-        downloadDialog.show();
-    }
-
-    @Override
-    protected void onProgressUpdate( DownloadProgress... downloadProgresses)
-    {
-        try
-        {
-            DownloadProgress progress = downloadProgresses[0];
-            progress.populateDialog(binding);
-        }
-        catch ( Exception e )
-        {
-            Log.e( LOG_TAG, e.getMessage() );
-            this.cancel(true);
-        }
+        if ( listener != null )
+            listener.onProgressUpdate( progresses[0] );
     }
 
     @Override
     protected void onCancelled ( Void nothing )
     {
         Log.w( LOG_TAG, "onCancelled" );
-        if ( downloadDialog!=null ) downloadDialog.dismiss();
     }
 
     @Override
     protected void onPostExecute( Void nothing )
     {
         Log.w( LOG_TAG, "onPostExecute" );
-        if ( downloadDialog!=null ) downloadDialog.dismiss();
         if ( error != null ) listener.onDownloadError( error.getMessage() );
         else if ( listener != null ) listener.onMapDownloaded();
     }

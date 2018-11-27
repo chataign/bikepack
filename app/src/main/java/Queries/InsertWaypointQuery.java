@@ -1,12 +1,15 @@
-package bikepack.bikepack;
+package Queries;
 
 import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
-class InsertWaypointQuery extends AsyncTask< Void, Void, Void >
+import bikepack.bikepack.Waypoint;
+import bikepack.bikepack.AppDatabase;
+
+public class InsertWaypointQuery extends AsyncTask< Void, Void, Void >
 {
-    interface Listener
+    public interface Listener
     {
         void onWaypointInserted( Waypoint waypoint );
         void onInsertWaypointError(String errorMessage);
@@ -19,7 +22,7 @@ class InsertWaypointQuery extends AsyncTask< Void, Void, Void >
     private final Listener listener;
     private Exception error = null;
 
-    InsertWaypointQuery(@NonNull AppDatabase database,
+    public InsertWaypointQuery(@NonNull AppDatabase database,
                         @NonNull Waypoint waypoint,
                         @NonNull Listener listener )
     {

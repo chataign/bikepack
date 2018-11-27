@@ -12,7 +12,7 @@ import static android.arch.persistence.room.ForeignKey.CASCADE;
         entity = Route.class, parentColumns = "routeId",
         childColumns = "routeId", onDelete = CASCADE),
         indices = {@Index("routeId")} )
-class Trackpoint
+public class Trackpoint
 {
     static String GPX_TAG = "trkpt";
 
@@ -27,7 +27,7 @@ class Trackpoint
     @Ignore
     final GlobalPosition position;
 
-    Trackpoint( long routeId, double latitude, double longitude, float elevation )
+    public Trackpoint( long routeId, double latitude, double longitude, float elevation )
     {
         this.routeId = routeId;
         this.latitude = latitude;
@@ -37,13 +37,13 @@ class Trackpoint
         this.position = new GlobalPosition(latitude,longitude,elevation);
     }
 
-    Trackpoint( GlobalPosition position, long routeId )
+    public Trackpoint( GlobalPosition position, long routeId )
     {
         this( routeId, position.latitude, position.longitude, position.elevation );
     }
 
     @Dao
-    interface DatabaseAccess
+    public interface DatabaseAccess
     {
         @Query("SELECT * FROM Trackpoint WHERE routeId = :routeId")
         List<Trackpoint> getByRouteId( long routeId );

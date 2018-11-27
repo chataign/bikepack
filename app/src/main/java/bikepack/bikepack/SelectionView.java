@@ -19,7 +19,7 @@ public class SelectionView extends RelativeLayout
     interface Listener
     {
         void onSelectionTouched( float pixelX );
-        void onSelectionClicked( float leftX, float rightX );
+        void onSelectionDoubleClicked( float leftX, float rightX );
         void onSelectionUpdated( float leftX, float rightX );
     }
 
@@ -50,9 +50,9 @@ public class SelectionView extends RelativeLayout
             {
                 public boolean onDoubleTapEvent(MotionEvent e)
                 {
-                    Log.i( LOG_TAG, "onDoubleTapEvent" );
+                    //Log.i( LOG_TAG, "onDoubleTapEvent" );
                     if ( listener == null ) return false;
-                    listener.onSelectionClicked(left, right);
+                    listener.onSelectionDoubleClicked(left, right);
                     return true;
                 }
             } );
@@ -120,6 +120,7 @@ public class SelectionView extends RelativeLayout
         } );
     }
 
+    float getMinWidth() { return minWidth; }
     void setListener( Listener listener )
     {
         this.listener = listener;

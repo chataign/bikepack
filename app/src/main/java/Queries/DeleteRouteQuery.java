@@ -1,12 +1,15 @@
-package bikepack.bikepack;
+package Queries;
 
 import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
-class DeleteRouteQuery extends AsyncTask< Void, Void, Void >
+import bikepack.bikepack.AppDatabase;
+import bikepack.bikepack.Route;
+
+public class DeleteRouteQuery extends AsyncTask< Void, Void, Void >
 {
-    interface Listener
+    public interface Listener
     {
         void onRouteDeleted();
         void onDeleteRouteError(String errorMessage);
@@ -19,7 +22,7 @@ class DeleteRouteQuery extends AsyncTask< Void, Void, Void >
     private final Listener listener;
     private Exception error = null;
 
-    DeleteRouteQuery(@NonNull AppDatabase database,
+    public DeleteRouteQuery(@NonNull AppDatabase database,
                      @NonNull Route route,
                      @NonNull Listener listener )
     {
@@ -52,6 +55,6 @@ class DeleteRouteQuery extends AsyncTask< Void, Void, Void >
     protected void onPostExecute( Void nothing )
     {
         if ( error != null ) listener.onDeleteRouteError( error.getMessage() );
-        else listener.onRouteDeleted();
+        else if ( listener != null )listener.onRouteDeleted();
     }
 }

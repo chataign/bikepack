@@ -1,47 +1,45 @@
 package bikepack.bikepack;
 
-import bikepack.bikepack.databinding.DowloadProgressBinding;
+import bikepack.bikepack.databinding.DownloadMapActivityBinding;
 
 class DownloadProgress
 {
     private  static final String LOG_TAG = "DownloadProgress";
 
-    final int numTilesDowloaded;
     final int numTilesTotal;
-    final float downloadedSizeMb;
-    final long downloadTimeMs;
-    final long writeTimeMs;
-    final long totalTimeMs;
+    int numTilesDowloaded=0;
+    float downloadedSizeMb=0;
+    long downloadTimeMs=0;
+    long writeTimeMs=0;
+    long totalTimeMs=0;
 
-    DownloadProgress(int numTilesDowloaded, int numTilesTotal, float downloadedSizeMb, long downloadTimeMs, long writeTimeMs, long totalTimeMs) {
-        this.numTilesDowloaded = numTilesDowloaded;
+    DownloadProgress(int numTilesTotal)
+    {
         this.numTilesTotal = numTilesTotal;
-        this.downloadedSizeMb = downloadedSizeMb;
-        this.downloadTimeMs = downloadTimeMs;
-        this.writeTimeMs = writeTimeMs;
-        this.totalTimeMs = totalTimeMs;
     }
 
     int getPercent()
     {
+        if ( numTilesTotal == 0 ) return 100;
         return (int) (100 * numTilesDowloaded / (float) numTilesTotal);
     }
 
     float getEstimatedTime() // seconds
     {
+        if ( numTilesDowloaded == 0 || numTilesDowloaded > numTilesTotal ) return 0;
         return (numTilesTotal - numTilesDowloaded) * (totalTimeMs/1000) / numTilesDowloaded;
     }
 
     float getEstimatedSizeMb()
     {
+        if ( numTilesDowloaded == 0 ) return 0;
         return numTilesTotal * downloadedSizeMb / numTilesDowloaded;
     }
 
-    void populateDialog( DowloadProgressBinding dialog )
+    void populateDialog( DownloadMapActivityBinding dialog )
     {
         int downloadTimePercent = (int)( 100*downloadTimeMs/(float)totalTimeMs );
         int writeTimePercent = (int)( 100*writeTimeMs/(float)totalTimeMs );
-
 
         dialog.progressPercent.setText( String.format( "%d%%", getPercent() ) );
         dialog.progressPercentBar.setProgress( getPercent() );

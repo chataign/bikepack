@@ -1,9 +1,12 @@
 package bikepack.bikepack;
 
 import android.app.AlertDialog;
-import android.arch.persistence.room.Room;
+import android.arch.lifecycle.Observer;
+import android.arch.lifecycle.ViewModelProviders;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
+import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -25,18 +28,72 @@ public class RouteListActivity extends AppCompatActivity
     private static final int ACTION_SELECT_ROUTE_FILE = 1;
     private static final String LOG_TAG = "RouteListActivity";
 
-    private AppDatabase database;
     private RouteAdapter routesAdapter;
+    RouteListViewModel routesViewModel;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState)
-    {
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView( R.layout.route_list_activity );
+        setContentView(R.layout.route_list_activity);
 
-        database = Room.databaseBuilder(this, AppDatabase.class, AppDatabase.DB_NAME)
-                .fallbackToDestructiveMigration()
-                .build();
+        routesAdapter = new RouteAdapter( getApplicationContext(), new ArrayList<Route>() );
+
+        ListView routeListView = findViewById(R.id.route_list);
+        routeListView.setAdapter(routesAdapter);
+        routeListView.setOnItemClickListener( new ListView.OnItemClickListener()
+        {
+            @Override
+            public void onItemClick( AdapterView<?> list, View view, int position, long id )
+            {
+            Route route = (Route) list.getItemAtPosition(position);
+            Intent intent = new Intent( RouteListActivity.this, RouteInfoActivity2.class);
+            intent.putExtra( getString(R.string.route_extra), route );
+            startActivity(intent);
+            }
+        });
+        routeListView.setOnItemLongClickListener( new ListView.OnItemLongClickListener()
+        {
+            @Override
+            public boolean onItemLongClick( AdapterView<?> list, View view, int position, long id )
+            {
+            final Route route = (Route) list.getItemAtPosition(position);
+            new AlertDialog.Builder(RouteListActivity.this)
+                    .setTitle(R.string.route_delete_dialog_title)
+                    .setMessage(R.string.route_delete_dialog_message)
+                    .setNegativeButton(R.string.dialog_ok, null )
+                    .setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            routesViewModel.deleteRoute(route);
+                        }
+                    })
+                    .create()
+                    .show();
+            return true;
+            }
+        });
+
+        routesViewModel = ViewModelProviders.of(this).get(RouteListViewModel.class);
+        routesViewModel.getRoutes().observe(this, new Observer<List<Route>>() {
+            @Override
+            public void onChanged(@Nullable List<Route> routes)
+            {
+                routesAdapter.clear();
+                routesAdapter.addAll(routes);
+            }
+        } );
+
+        FloatingActionButton addButton = findViewById(R.id.add_button);
+        addButton.setOnClickListener(new View.OnClickListener()
+        {
+            public void onClick(View v)
+            {
+                Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                intent.addCategory(Intent.CATEGORY_OPENABLE);
+                intent.setType( getString(R.string.routes_mime_types) );
+                startActivityForResult(Intent.createChooser(intent,"Select route file"), ACTION_SELECT_ROUTE_FILE);
+            }
+        });
     }
 
     @Override
@@ -68,54 +125,6 @@ public class RouteListActivity extends AppCompatActivity
     }
 
     @Override
-    public void onStart()
-    {
-        super.onStart();
-
-        routesAdapter = new RouteAdapter( getApplicationContext(), new ArrayList<Route>() );
-
-        new GetRoutesQuery(database, new GetRoutesQuery.Listener()
-        {
-            @Override
-            public void onRoutesReceived(List<Route> routes) {
-                routesAdapter.addAll(routes);
-            }
-
-            @Override
-            public void onGetRoutesError(String errorMessage) {
-                Log.e( LOG_TAG, errorMessage );
-                showErrorMessage( getString(R.string.route_loading_failed), errorMessage );
-            }
-        }).execute();
-
-        ListView routeList = findViewById(R.id.route_list);
-        routeList.setAdapter(routesAdapter);
-        routeList.setOnItemClickListener( new ListView.OnItemClickListener()
-        {
-            @Override
-            public void onItemClick( AdapterView<?> list, View view, int position, long id )
-            {
-                Route route = (Route) list.getItemAtPosition(position);
-                Intent intent = new Intent( RouteListActivity.this, RouteInfoActivity.class);
-                intent.putExtra( getString(R.string.route_extra), route );
-                startActivity(intent);
-            }
-        });
-
-        FloatingActionButton addButton = findViewById(R.id.add_button);
-        addButton.setOnClickListener(new View.OnClickListener()
-        {
-            public void onClick(View v)
-            {
-                Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-                intent.addCategory(Intent.CATEGORY_OPENABLE);
-                intent.setType( getString(R.string.routes_mime_types) );
-                startActivityForResult(Intent.createChooser(intent,"Select route file"), ACTION_SELECT_ROUTE_FILE);
-            }
-        });
-    }
-
-    @Override
     protected void onActivityResult(int request_code, int result_code, Intent intent)
     {
         if (request_code == ACTION_SELECT_ROUTE_FILE && result_code == RESULT_OK )
@@ -128,74 +137,53 @@ public class RouteListActivity extends AppCompatActivity
 
     private void importRoute( Uri routeUri )
     {
-        View progressDialogView = getLayoutInflater().inflate(R.layout.progress_dialog, null );
+        View dialogView = getLayoutInflater().inflate(R.layout.progress_dialog, null );
 
-        AlertDialog.Builder progressBuilder = new AlertDialog.Builder(this)
+        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this)
                 .setTitle(R.string.route_import_dialog_title)
                 .setNegativeButton( R.string.dialog_cancel, null )
-                .setView(progressDialogView);
+                .setView(dialogView);
 
-        final AlertDialog progressDialog = progressBuilder.create();
-        progressDialog.show();
+        final AlertDialog dialog = dialogBuilder.create();
+        dialog.show();
 
-        final TextView progressMessage = progressDialogView.findViewById(R.id.progress_message);
+        final TextView progressMessage = dialogView.findViewById(R.id.progress_message);
         progressMessage.setText( getString(R.string.route_import_dialog_parse_gpx) );
 
-        GpxFileParser gpxFileParser = new GpxFileParser(getContentResolver(), routeUri, new GpxFileParser.Listener()
+        new GpxFileParser(getContentResolver(), routeUri, new GpxFileParser.Listener()
         {
             @Override
             public void onGpxFileRead( Metadata metadata,
                                        List<GlobalPosition> trackpoints,
-                                       List<NamedGlobalPosition> waypoints )
-            {
+                                       List<NamedGlobalPosition> waypoints ) {
                 progressMessage.setText( getString(R.string.route_import_dialog_write_db) );
-
-                CreateRouteQuery createRouteTask = new CreateRouteQuery(
-                        database, metadata, trackpoints, waypoints, new CreateRouteQuery.Listener()
-                {
-                    public void onRouteCreated(Route route)
-                    {
-                        progressDialog.dismiss();
-                        routesAdapter.add(route);
-                    }
-
-                    public void onCreateRouteError( String errorMessage )
-                    {
-                        progressDialog.dismiss();
-                        showErrorMessage( getString(R.string.route_creation_failed), errorMessage );
-                    }
-                });
-
-                createRouteTask.execute();
+                routesViewModel.createRoute( metadata, trackpoints, waypoints );
+                dialog.dismiss();
             }
 
             @Override
-            public void onGpxReadError( String errorMessage )
-            {
-                progressDialog.dismiss();
+            public void onGpxReadError( String errorMessage ) {
+                dialog.dismiss();
                 showErrorMessage( getString(R.string.route_creation_failed), errorMessage );
             }
 
             @Override
             public void onGpxReadCancelled()
             {
-                progressDialog.dismiss();
+                dialog.dismiss();
             }
-        });
-
-        gpxFileParser.execute();
+        }).execute();
     }
 
     private void showErrorMessage( String title, String message )
     {
         Log.e( LOG_TAG, message );
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle(title);
-        builder.setMessage(message);
-        builder.setPositiveButton(R.string.dialog_ok, null );
-
-        AlertDialog alertDialog = builder.create();
-        alertDialog.show();
+        new AlertDialog.Builder(this)
+            .setTitle(title)
+            .setMessage(message)
+            .setPositiveButton(R.string.dialog_ok, null )
+            .create()
+            .show();
     }
 }

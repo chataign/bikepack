@@ -1,5 +1,6 @@
 package bikepack.bikepack;
 
+import android.arch.lifecycle.LiveData;
 import android.arch.persistence.room.Dao;
 import android.arch.persistence.room.Delete;
 import android.arch.persistence.room.Entity;
@@ -23,7 +24,7 @@ import static android.arch.persistence.room.OnConflictStrategy.ABORT;
 public class Route implements Parcelable
 {
     @PrimaryKey(autoGenerate = true)
-    int routeId;
+    public int routeId;
     final String routeName;
     final String authorName;
     final String authorLink;
@@ -169,13 +170,13 @@ public class Route implements Parcelable
     };
 
     @Dao
-    interface DatabaseAccess
+    public interface DatabaseAccess
     {
         @Query("SELECT * FROM Route")
-        List<Route> getAll();
+        LiveData< List<Route> > getAll();
 
         @Query("SELECT * FROM Route WHERE routeId=:routeId")
-        Route find( int routeId );
+        LiveData<Route> find(int routeId );
 
         @Query("SELECT * FROM Route WHERE routeName=:routeName AND authorName=:authorName")
         Route find( String routeName, String authorName );
@@ -190,7 +191,7 @@ public class Route implements Parcelable
         void delete(Route route);
     }
 
-    static Route buildFromData( Metadata metadata, List<GlobalPosition> trackpoints, List<NamedGlobalPosition> waypoints )
+    public static Route buildFromData( Metadata metadata, List<GlobalPosition> trackpoints, List<NamedGlobalPosition> waypoints )
     {
         float totalDistance=0, totalAscent=0, totalDescent=0, highestElevation=0, lowestElevation=1e6f;
         LatLngBounds.Builder boundsBuilder = new LatLngBounds.Builder();

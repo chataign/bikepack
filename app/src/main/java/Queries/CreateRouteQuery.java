@@ -1,4 +1,4 @@
-package bikepack.bikepack;
+package Queries;
 
 import android.os.AsyncTask;
 import android.support.annotation.NonNull;
@@ -6,9 +6,17 @@ import android.util.Log;
 
 import java.util.List;
 
-class CreateRouteQuery extends AsyncTask< Void, Void, Route>
+import bikepack.bikepack.AppDatabase;
+import bikepack.bikepack.GlobalPosition;
+import bikepack.bikepack.Metadata;
+import bikepack.bikepack.NamedGlobalPosition;
+import bikepack.bikepack.Route;
+import bikepack.bikepack.Trackpoint;
+import bikepack.bikepack.Waypoint;
+
+public class CreateRouteQuery extends AsyncTask< Void, Void, Route>
 {
-    interface Listener
+    public interface Listener
     {
         void onRouteCreated( Route route );
         void onCreateRouteError(String errorMessage);
@@ -23,7 +31,7 @@ class CreateRouteQuery extends AsyncTask< Void, Void, Route>
     private final Listener listener;
     private Exception error = null;
 
-    CreateRouteQuery(@NonNull AppDatabase database,
+    public CreateRouteQuery(@NonNull AppDatabase database,
                      @NonNull Metadata metadata,
                      @NonNull List<GlobalPosition> trackpoints,
                      @NonNull List<NamedGlobalPosition> waypoints,
@@ -82,7 +90,10 @@ class CreateRouteQuery extends AsyncTask< Void, Void, Route>
     @Override
     protected void onPostExecute( Route route )
     {
-        if ( error != null ) listener.onCreateRouteError( error.getMessage() );
-        else if ( route != null ) listener.onRouteCreated(route);
+        if ( listener != null )
+        {
+            if ( error != null ) listener.onCreateRouteError( error.getMessage() );
+            else if ( route != null ) listener.onRouteCreated(route);
+        }
     }
 }

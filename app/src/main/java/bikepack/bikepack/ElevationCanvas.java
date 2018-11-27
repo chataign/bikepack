@@ -23,6 +23,7 @@ public class ElevationCanvas extends View
     private final Paint guidePaint;
     private final int num_guides;
     private Bitmap bitmap=null;
+    private DrawBitmapTask drawBitmapTask=null;
 
     ElevationCanvas(Context context, AttributeSet attrs)
     {
@@ -68,27 +69,30 @@ public class ElevationCanvas extends View
         super.onDraw(canvas);
     }
 
-    // TODO setValues() with array of objects and value getter
-
     void drawTrackpoints( @NonNull List<Trackpoint> trackpoints )
     {
-        Log.i( LOG_TAG, "trackpoints=" + trackpoints.size() );
-
-        DrawBitmap drawBitmap = new DrawBitmap( this, trackpoints, new DrawBitmap.Listener()
+        drawBitmapTask = new DrawBitmapTask( this, trackpoints, new DrawBitmapTask.Listener()
         {
             @Override
             public void onBitmapReady( Bitmap bitmap )
             {
-                Log.i( LOG_TAG, "onBitmapReady" );
+                //Log.i( LOG_TAG, "onBitmapReady" );
                 ElevationCanvas.this.bitmap = bitmap;
                 ElevationCanvas.this.invalidate(); // calls onDraw()
             }
         } );
 
-        drawBitmap.execute();
+        drawBitmapTask.execute();
     }
 
-    static private class DrawBitmap extends AsyncTask< Void, Void, Bitmap >
+    @Override
+    protected void onDetachedFromWindow ()
+    {
+        if ( drawBitmapTask != null ) drawBitmapTask.cancel(true);
+        super.onDetachedFromWindow();
+    }
+
+    static private class DrawBitmapTask extends AsyncTask< Void, Void, Bitmap >
     {
         interface Listener
         {
@@ -99,7 +103,7 @@ public class ElevationCanvas extends View
         private final List<Trackpoint> trackpoints;
         private final Listener listener;
 
-        DrawBitmap(ElevationCanvas plotCanvas, List<Trackpoint> trackpoints, Listener listener )
+        DrawBitmapTask(ElevationCanvas plotCanvas, List<Trackpoint> trackpoints, Listener listener )
         {
             this.plotCanvas = plotCanvas;
             this.trackpoints = trackpoints;
@@ -115,12 +119,13 @@ public class ElevationCanvas extends View
 
             for ( Trackpoint trackpoint: trackpoints )
             {
+                if ( isCancelled() ) return null;
                 minElevation = Math.min( trackpoint.elevation, minElevation );
                 maxElevation = Math.max( trackpoint.elevation, maxElevation );
             }
 
-            Log.i( LOG_TAG, String.format( "values: min=%.2f max=%.2f",
-                    minElevation, maxElevation ) );
+            //Log.i( LOG_TAG, String.format( "values: min=%.2f max=%.2f",
+            //        minElevation, maxElevation ) );
 
             int canvasLeft = plotCanvas.getPaddingLeft();
             int canvasTop = plotCanvas.getPaddingTop();
@@ -129,16 +134,16 @@ public class ElevationCanvas extends View
             int canvasWidth = canvasRight - canvasLeft;
             int canvasHeight = canvasBottom - canvasTop;
 
-            Log.i( LOG_TAG, String.format( "canvas: left=%d top=%d right=%d bottom=%d",
-                    canvasLeft, canvasTop, canvasRight, canvasBottom ) );
+            //Log.i( LOG_TAG, String.format( "canvas: left=%d top=%d right=%d bottom=%d",
+            //        canvasLeft, canvasTop, canvasRight, canvasBottom ) );
 
             Bitmap bitmap = Bitmap.createBitmap( plotCanvas.getWidth(), plotCanvas.getHeight(), Bitmap.Config.ARGB_8888);
             Canvas canvas = new Canvas(bitmap);
 
             int interval = (int) ( canvasHeight / (float) (plotCanvas.num_guides-1) );
 
-            Log.i( LOG_TAG, String.format( "canvas: guides=%d interval=%d",
-                    plotCanvas.num_guides, interval ) );
+            //Log.i( LOG_TAG, String.format( "canvas: guides=%d interval=%d",
+            //        plotCanvas.num_guides, interval ) );
 
             for ( int y= canvasTop; y <= canvasBottom; y += interval )
                 canvas.drawLine( canvasLeft, y, canvasRight, y, plotCanvas.guidePaint );
@@ -147,6 +152,7 @@ public class ElevationCanvas extends View
 
             for ( int i=0; i< trackpoints.size(); ++i )
             {
+                if ( isCancelled() ) return null;
                 float elevation = trackpoints.get(i).elevation;
 
                 float x = canvasLeft + i*canvasWidth / (float) trackpoints.size();
@@ -159,7 +165,9 @@ public class ElevationCanvas extends View
             canvas.drawPath( elevationPath, plotCanvas.linePaint );
 
             long endTime = System.currentTimeMillis();
-            Log.i( LOG_TAG, "drawing time=" + (endTime-startTime) );
+
+            Log.i( LOG_TAG, String.format( "drawn %d trackpoints in %dms",
+                    trackpoints.size(), endTime-startTime ) );
 
             return bitmap;
         }

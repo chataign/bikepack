@@ -1,5 +1,6 @@
 package bikepack.bikepack;
 
+import android.arch.lifecycle.LiveData;
 import android.arch.persistence.room.Dao;
 import android.arch.persistence.room.Entity;
 import android.arch.persistence.room.ForeignKey;
@@ -18,23 +19,23 @@ import static android.arch.persistence.room.ForeignKey.CASCADE;
 @Entity(foreignKeys = @ForeignKey(entity = Route.class, parentColumns = "routeId",
         childColumns = "routeId", onDelete = CASCADE),
         indices = {@Index("routeId")})
-class Waypoint
+public class Waypoint
 {
     static String GPX_TAG = "wpt";
 
     @PrimaryKey(autoGenerate = true)
-    long waypointId;
+    public long waypointId;
     final long routeId;
     final double latitude;
     final double longitude;
-    final String name;
+    public final String name;
     final String description;
     @Ignore
     final LatLng latlng;
     @Ignore
     final NamedGlobalPosition namedPosition;
 
-    Waypoint( long routeId, double latitude, double longitude, String name, String description )
+    public Waypoint( long routeId, double latitude, double longitude, String name, String description )
     {
         this.routeId = routeId;
         this.latitude = latitude;
@@ -52,7 +53,7 @@ class Waypoint
         this( routeId, position.latitude, position.longitude, name, description );
     }
 
-    Waypoint( long routeId , NamedGlobalPosition position )
+    public Waypoint( long routeId , NamedGlobalPosition position )
     {
         this( routeId, position.latitude, position.longitude, position.name, position.description );
     }
@@ -78,10 +79,10 @@ class Waypoint
     }
 
     @Dao
-    interface DatabaseAccess
+    public interface DatabaseAccess
     {
         @Query("SELECT * FROM Waypoint WHERE routeId=:routeId")
-        List<Waypoint> getByRouteId( long routeId );
+        LiveData< List<Waypoint> > getByRouteId(long routeId );
 
         @Insert
         long insert(Waypoint waypoint);

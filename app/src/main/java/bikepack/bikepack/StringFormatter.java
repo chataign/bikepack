@@ -15,7 +15,8 @@ public class StringFormatter {
 
         if (hours > 0) return String.format("%dh %d minutes", hours, minutes);
         else if (minutes > 0) return String.format("%d minutes", minutes);
-        else return String.format("%d seconds", seconds);
+        else if (seconds > 0) return String.format("%d seconds", seconds);
+        else return String.format("%dms", seconds*1000);
     }
 
     static String formatFileSize(float sizeMb) {

@@ -11,10 +11,10 @@ public class Metadata
     static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
     static final String GPX_TAG = "metadata";
 
-    final String routeName;
-    final String authorName;
-    final String authorLink;
-    final Date dateCreated;
+    public final String routeName;
+    public final String authorName;
+    public final String authorLink;
+    public final Date dateCreated;
 
     // TODO handle empty/null fields
 

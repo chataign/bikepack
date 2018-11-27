@@ -1,10 +1,14 @@
 package bikepack.bikepack;
 
+import android.arch.lifecycle.LiveData;
+import android.arch.lifecycle.MutableLiveData;
+import android.arch.lifecycle.Observer;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.databinding.DataBindingUtil;
 import android.os.Vibrator;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.GestureDetector;
@@ -23,15 +27,13 @@ import bikepack.bikepack.databinding.ElevationViewBinding;
 
 import static android.content.Context.VIBRATOR_SERVICE;
 
-public class ElevationView extends RelativeLayout
+public class ElevationView extends RelativeLayout implements SelectionView.Listener
 {
-    interface Listener
+    interface OnSelectionListener
     {
-        void onValueTouched(Trackpoint trackpoint);
-        void onValueReleased();
         void onSelectionCreated(List<Trackpoint> selection, List<LatLng> points);
         void onSelectionUpdated(List<Trackpoint> selection, List<LatLng> points);
-        void onSelectionDoubleClicked(List<Trackpoint> selection, List<LatLng> points);
+        void onZoomEntered();
     }
 
     private class ElevationData {
@@ -43,7 +45,7 @@ public class ElevationView extends RelativeLayout
 
         ElevationData(@NonNull List<Trackpoint> trackpoints, int canvasLeft, int canvasWidth)
                 throws Exception {
-            if (trackpoints.isEmpty())
+            if (trackpoints==null || trackpoints.isEmpty())
                 throw new Exception("invalid elevation data: trackpoints are empty");
 
             this.canvasLeft = canvasLeft;
@@ -95,15 +97,21 @@ public class ElevationView extends RelativeLayout
 
     static private final String LOG_TAG = "ElevationView";
 
+    private final ElevationViewBinding binding;
     private ElevationData data = null;
-    private final ElevationViewBinding layoutBinding;
-    private Listener listener = null;
+    private ElevationData dataBeforeZoom = null;
+    private OnSelectionListener onSelectionListener = null;
+
+    private MutableLiveData<Float> pixel = new MutableLiveData<>();
+    private MutableLiveData<Trackpoint> trackpoint = new MutableLiveData<>();
+
+    void setOnSelectionListener( OnSelectionListener onSelectionListener ) { this.onSelectionListener = onSelectionListener; }
 
     ElevationView(Context context, AttributeSet attrs) {
         super(context, attrs);
 
         LayoutInflater inflater = LayoutInflater.from(context);
-        layoutBinding = DataBindingUtil.inflate(inflater, R.layout.elevation_view, this, true);
+        binding = DataBindingUtil.inflate(inflater, R.layout.elevation_view, this, true);
 
         setClickable(true);
         setLongClickable(true);
@@ -119,13 +127,18 @@ public class ElevationView extends RelativeLayout
             {
                 public void onLongPress( MotionEvent event )
                 {
+                    if ( dataBeforeZoom != null )
+                        return; // disable when zoomed
+
                     if ( vibrate )
                     {
                         Vibrator vibrator = (Vibrator) getContext().getSystemService(VIBRATOR_SERVICE);
                         vibrator.vibrate(50);
                     }
 
-                    onEnterSelection( event.getX()-100, event.getX()+100 );
+                    onEnterSelection(
+                            event.getX()-binding.selectionView.getMinWidth()/2,
+                            event.getX()+binding.selectionView.getMinWidth()/2 );
                 }
             } );
 
@@ -134,16 +147,32 @@ public class ElevationView extends RelativeLayout
                 return gestureDetector.onTouchEvent(event);
             }
         } );
+
+        pixel.observe(this, new Observer<Float>() {
+            @Override
+            public void onChanged(@Nullable Float pixelX ) {
+                if ( pixelX != null )
+                {
+                    float distance = data.getDistance(pixelX);
+                    float elevation = data.getTrackpoint(pixelX).elevation;
+
+                    binding.touchMarker.setX(pixelX);
+                    binding.elevationText.setText( StringFormatter.formatDistance(elevation,true) );
+                    binding.distanceText.setText( StringFormatter.formatDistance(distance,false) );
+                    binding.trackpointInfo.setVisibility(VISIBLE);
+                }
+                else
+                {
+                    binding.trackpointInfo.setVisibility(GONE);
+                }
+            }
+        });
     }
 
-    void setTrackpoints(@NonNull final List<Trackpoint> trackpoints, final Listener listener)
-    {
-        if ( trackpoints == null )
-        {
-            Log.e( LOG_TAG, "trackpoints are null");
-            return;
-        }
+    LiveData<Trackpoint> getTrackpoint() { return trackpoint; }
 
+    void setTrackpoints(@NonNull final List<Trackpoint> trackpoints )
+    {
         Log.i( LOG_TAG, "setTrackpoints size=" + trackpoints.size() );
 
         int canvasLeft = getPaddingLeft();
@@ -152,10 +181,8 @@ public class ElevationView extends RelativeLayout
 
         try
         {
-            this.data = new ElevationData( trackpoints, canvasLeft, canvasWidth );
-            this.listener = listener;
-
-            layoutBinding.plot.drawTrackpoints(trackpoints);
+            this.data = new ElevationData( trackpoints, canvasLeft, canvasWidth ); // TODO slow & blocks
+            binding.plot.drawTrackpoints(trackpoints);
         }
         catch( Exception e )
         {
@@ -173,19 +200,18 @@ public class ElevationView extends RelativeLayout
     @Override
     public boolean onTouchEvent(MotionEvent event)
     {
-        float pixelX = event.getX();
-
         switch (event.getAction()) {
             case MotionEvent.ACTION_MOVE:
             case MotionEvent.ACTION_DOWN:
-                layoutBinding.touchMarker.setX(pixelX);
-                layoutBinding.touchMarker.setVisibility(VISIBLE);
-                onPixelTouched(pixelX);
+                if ( data != null )
+                {
+                    trackpoint.setValue( data.getTrackpoint(event.getX() ) );
+                    pixel.setValue( event.getX() );
+                }
                 return true;
             case MotionEvent.ACTION_UP:
-                if (listener != null) listener.onValueReleased();
-                layoutBinding.touchMarker.setVisibility(GONE);
-                onPixelReleased();
+                trackpoint.setValue(null);
+                pixel.setValue(null);
                 return true;
         }
 
@@ -194,83 +220,62 @@ public class ElevationView extends RelativeLayout
 
     private void onEnterSelection( float leftX, float rightX )
     {
-        if ( data == null || listener == null )
+        if ( data == null || onSelectionListener == null )
             return;
 
-        listener.onSelectionCreated(
+        onSelectionListener.onSelectionCreated(
                 data.getTrackpointsBetween( leftX, rightX ),
                 data.getPointsBetween( leftX, rightX ) );
 
-        layoutBinding.selectionView.updateBounds( leftX, rightX );
-        layoutBinding.selectionView.setVisibility(VISIBLE);
-        layoutBinding.selectionView.setListener(new SelectionView.Listener()
+        binding.selectionView.updateBounds( leftX, rightX );
+        binding.selectionView.setVisibility(VISIBLE);
+        binding.selectionView.setEnabled(true);
+        binding.selectionView.setListener(this);
+    }
+
+    @Override
+    public void onSelectionTouched(float pixelX)
+    {
+        trackpoint.setValue( data.getTrackpoint(pixelX) );
+    }
+
+    @Override
+    public void onSelectionDoubleClicked(float leftX, float rightX)
+    {
+        Log.i( LOG_TAG, "onSelectionDoubleClicked left=" + leftX + " right=" + rightX );
+
+        binding.selectionView.setVisibility(GONE);
+        binding.selectionView.setEnabled(false);
+
+        List<Trackpoint> zoomTrackpoints = data.getTrackpointsBetween( leftX, rightX );
+        List<LatLng> zoomPoints = data.getPointsBetween( leftX, rightX );
+
+        dataBeforeZoom = data;
+
+        setTrackpoints( zoomTrackpoints );
+        if ( onSelectionListener != null ) onSelectionListener.onZoomEntered();
+    }
+
+    @Override
+    public void onSelectionUpdated(float leftX, float rightX)
+    {
+        Log.i( LOG_TAG, "onSelectionUpdated left=" + leftX + " right=" + rightX );
+
+        if ( onSelectionListener != null )
+            onSelectionListener.onSelectionUpdated(
+                data.getTrackpointsBetween( leftX, rightX ),
+                data.getPointsBetween( leftX, rightX ) );
+    }
+
+    void exitSelection()
+    {
+        if ( dataBeforeZoom != null )
         {
-            @Override
-            public void onSelectionTouched(float pixelX)
-            {
-                listener.onValueTouched( data.getTrackpoint(pixelX) );
-            }
+            setTrackpoints( dataBeforeZoom.trackpoints );
+            dataBeforeZoom = null;
+        }
 
-            @Override
-            public void onSelectionClicked(float leftX, float rightX) {
-
-                Log.i( LOG_TAG, "onSelectionClicked" );
-
-                listener.onSelectionDoubleClicked(
-                        data.getTrackpointsBetween( leftX, rightX ),
-                        data.getPointsBetween( leftX, rightX ) );
-
-                layoutBinding.selectionView.setVisibility(INVISIBLE);
-                layoutBinding.selectionView.setListener(null);
-            }
-
-            @Override
-            public void onSelectionUpdated(float leftX, float rightX)
-            {
-                //Log.i( LOG_TAG, "onSelectionUpdated" );
-
-                long time1 = System.currentTimeMillis();
-                List<Trackpoint> trackpointBetween = data.getTrackpointsBetween( leftX, rightX );
-                List<LatLng> pointsBetween = data.getPointsBetween( leftX, rightX );
-                long time2 = System.currentTimeMillis();
-
-                listener.onSelectionUpdated( trackpointBetween, pointsBetween );
-                long time3 = System.currentTimeMillis();
-
-                Log.i( LOG_TAG, "subList="+(time2-time1)+ " onSelectionUpdated="+(time3-time2) );
-            }
-        });
+        binding.selectionView.setVisibility(GONE);
+        binding.selectionView.setEnabled(false);
     }
-
-    void onExitSelection()
-    {
-        layoutBinding.selectionView.setVisibility(INVISIBLE);
-    }
-
-    private void onPixelTouched(float pixelX)
-    {
-        if ( data == null ) return;
-
-        Trackpoint trackpoint = data.getTrackpoint(pixelX);
-        layoutBinding.elevationText.setText( StringFormatter.formatDistance(trackpoint.elevation,true) );
-        layoutBinding.elevationText.setVisibility(VISIBLE);
-        layoutBinding.elevationLabel.setVisibility(VISIBLE);
-
-        float distance = data.getDistance(pixelX);
-        layoutBinding.distanceText.setText( StringFormatter.formatDistance(distance,false) );
-        layoutBinding.distanceText.setVisibility(VISIBLE);
-        layoutBinding.distanceLabel.setVisibility(VISIBLE);
-
-        if (listener != null) listener.onValueTouched(trackpoint);
-    }
-
-    private void onPixelReleased()
-    {
-        layoutBinding.elevationText.setVisibility(GONE);
-        layoutBinding.elevationLabel.setVisibility(GONE);
-
-        layoutBinding.distanceText.setVisibility(GONE);
-        layoutBinding.distanceLabel.setVisibility(GONE);
-    }
-
 }

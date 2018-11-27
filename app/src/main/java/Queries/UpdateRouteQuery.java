@@ -1,4 +1,4 @@
-package bikepack.bikepack;
+package Queries;
 
 import android.os.AsyncTask;
 import android.support.annotation.NonNull;
@@ -7,9 +7,9 @@ import android.util.Log;
 import bikepack.bikepack.AppDatabase;
 import bikepack.bikepack.Route;
 
-class UpdateRouteQuery extends AsyncTask< Void, Void, Route>
+public class UpdateRouteQuery extends AsyncTask< Void, Void, Route>
 {
-    interface Listener
+    public interface Listener
     {
         void onRouteUpdated( Route route );
         void onUpdateRouteError(String errorMessage);
@@ -25,7 +25,7 @@ class UpdateRouteQuery extends AsyncTask< Void, Void, Route>
     private final Listener listener;
     private Exception error = null;
 
-    UpdateRouteQuery(@NonNull AppDatabase database,
+    public UpdateRouteQuery(@NonNull AppDatabase database,
                      int routeId, String routeName, String authorName, String authorLink,
                      @NonNull Listener listener )
     {
@@ -44,7 +44,7 @@ class UpdateRouteQuery extends AsyncTask< Void, Void, Route>
         try
         {
             database.routes().update( routeId, routeName, authorName, authorLink );
-            return database.routes().find(routeId);
+            return database.routes().find(routeId).getValue(); // TODO
         }
         catch( Exception error )
         {

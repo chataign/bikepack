@@ -1,6 +1,6 @@
 package bikepack.bikepack;
 
-class NamedGlobalPosition extends GlobalPosition
+public class NamedGlobalPosition extends GlobalPosition
 {
     final String name;
     final String description;

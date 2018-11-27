@@ -42,7 +42,8 @@ class GetRouteDataQuery extends AsyncTask< Void, Void, Void >
         try
         {
             trackpoints = database.trackpoints().getByRouteId(routeId);
-            waypoints = database.waypoints().getByRouteId(routeId);
+            if ( isCancelled() ) return null;
+            waypoints = database.waypoints().getByRouteId(routeId).getValue();
         }
         catch ( Exception error )
         {
@@ -54,6 +55,12 @@ class GetRouteDataQuery extends AsyncTask< Void, Void, Void >
         Log.i( LOG_TAG, String.format( "executed in %dms", endTime-startTime ) );
 
         return null;
+    }
+
+    @Override
+    protected void onCancelled()
+    {
+        Log.w( LOG_TAG, "task cancelled");
     }
 
     @Override
