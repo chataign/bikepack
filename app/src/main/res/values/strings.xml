@@ -6,6 +6,7 @@
     <string name="title_activity_home">My routes</string>
     <string name="title_activity_route_map">Route map</string>
     <string name="title_activity_route_info">Route info</string>
+    <string name="title_activity_download_map">Downloading map</string>
 
     <string name="routes_mime_types">application/*</string>
     <string name="route_extra">route</string>
@@ -50,6 +51,7 @@
     <string name="menu_show_map">"Show map"</string>
     <string name="menu_map_download">"Download map"</string>
     <string name="menu_map_layers">"Map layers"</string>
+    <string name="menu_map_storage">"Map storage"</string>
     <string name="menu_toggle_elevation">"Toggle elevation"</string>
     <string name="menu_add_waypoint">Add waypoint</string>
 </resources>
