@@ -3,6 +3,8 @@ package bikepack.bikepack;
 import android.app.Application;
 import android.arch.lifecycle.AndroidViewModel;
 import android.arch.lifecycle.LiveData;
+import android.os.AsyncTask;
+import android.support.annotation.NonNull;
 
 import com.google.android.gms.maps.model.LatLng;
 
@@ -10,6 +12,7 @@ import java.util.List;
 
 import Queries.CreateRouteQuery;
 import Queries.DeleteRouteQuery;
+import Queries.InsertWaypointQuery;
 
 public class WaypointListViewModel extends AndroidViewModel
 {
@@ -25,7 +28,7 @@ public class WaypointListViewModel extends AndroidViewModel
 
     void init( int routeId )
     {
-        routeId = routeId;
+        this.routeId = routeId;
         waypoints = database.waypoints().getByRouteId(routeId);
     }
 
@@ -33,6 +36,6 @@ public class WaypointListViewModel extends AndroidViewModel
 
     void createWaypoint( NamedGlobalPosition waypointData )
     {
-        database.waypoints().insert( new Waypoint( routeId, waypointData ) );
+        new InsertWaypointQuery( database, new Waypoint( routeId, waypointData ), null ).execute();
     }
 }

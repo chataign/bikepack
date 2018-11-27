@@ -19,7 +19,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 
 import bikepack.bikepack.databinding.WaypointEditBinding;
 
-public class WaypointCreator implements ActionMode.Callback
+public class AddWaypointActionMode implements ActionMode.Callback
 {
     private final AppCompatActivity activity;
     private final GoogleMap googleMap;
@@ -29,7 +29,7 @@ public class WaypointCreator implements ActionMode.Callback
     private final int actionModeStatusBarColor;
     private Marker waypointMarker;
 
-    WaypointCreator(final AppCompatActivity activity, final GoogleMap googleMap, WaypointListViewModel waypoints )
+    AddWaypointActionMode(final AppCompatActivity activity, final GoogleMap googleMap, WaypointListViewModel waypoints )
     {
         this.activity = activity;
         this.googleMap = googleMap;

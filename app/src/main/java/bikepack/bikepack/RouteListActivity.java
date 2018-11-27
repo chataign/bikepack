@@ -46,7 +46,7 @@ public class RouteListActivity extends AppCompatActivity
             public void onItemClick( AdapterView<?> list, View view, int position, long id )
             {
             Route route = (Route) list.getItemAtPosition(position);
-            Intent intent = new Intent( RouteListActivity.this, RouteInfoActivity2.class);
+            Intent intent = new Intent( RouteListActivity.this, RouteInfoActivity.class);
             intent.putExtra( getString(R.string.route_extra), route );
             startActivity(intent);
             }
@@ -60,7 +60,7 @@ public class RouteListActivity extends AppCompatActivity
             new AlertDialog.Builder(RouteListActivity.this)
                     .setTitle(R.string.route_delete_dialog_title)
                     .setMessage(R.string.route_delete_dialog_message)
-                    .setNegativeButton(R.string.dialog_ok, null )
+                    .setNegativeButton(R.string.dialog_cancel, null )
                     .setPositiveButton(R.string.dialog_ok, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {

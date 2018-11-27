@@ -41,7 +41,7 @@ class GetRouteDataQuery extends AsyncTask< Void, Void, Void >
 
         try
         {
-            trackpoints = database.trackpoints().getByRouteId(routeId);
+            trackpoints = database.trackpoints().getByRouteId(routeId).getValue();
             if ( isCancelled() ) return null;
             waypoints = database.waypoints().getByRouteId(routeId).getValue();
         }

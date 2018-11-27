@@ -25,7 +25,7 @@ import java.util.List;
 
 import bikepack.bikepack.databinding.RouteEditBinding;
 
-class PolylineSelection implements ActionMode.Callback, ElevationView.OnSelectionListener
+class PolylineSelection implements ActionMode.Callback
 {
     private final AppCompatActivity activity;
     private final GoogleMap googleMap;

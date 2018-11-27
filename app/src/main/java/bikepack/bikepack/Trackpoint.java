@@ -1,5 +1,6 @@
 package bikepack.bikepack;
 
+import android.arch.lifecycle.LiveData;
 import android.arch.persistence.room.*;
 
 import com.google.android.gms.maps.model.LatLng;
@@ -46,7 +47,7 @@ public class Trackpoint
     public interface DatabaseAccess
     {
         @Query("SELECT * FROM Trackpoint WHERE routeId = :routeId")
-        List<Trackpoint> getByRouteId( long routeId );
+        LiveData< List<Trackpoint> > getByRouteId(long routeId );
 
         @Insert
         void insert(Trackpoint... trackpoints);

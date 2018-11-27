@@ -58,6 +58,6 @@ public class InsertWaypointQuery extends AsyncTask< Void, Void, Void >
     protected void onPostExecute( Void nothing )
     {
         if ( error != null ) listener.onInsertWaypointError( error.getMessage() );
-        else listener.onWaypointInserted(waypoint);
+        else if ( listener != null ) listener.onWaypointInserted(waypoint);
     }
 }
