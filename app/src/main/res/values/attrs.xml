@@ -15,4 +15,12 @@
     <declare-styleable name="SelectionView">
         <attr name="min_width" format="dimension" />
     </declare-styleable>
+
+    <declare-styleable name="RouteMapView">
+        <attr name="my_location_button_enabled" format="boolean" />
+        <attr name="zoom_controls_enabled" format="boolean" />
+        <attr name="map_toolbar_enabled" format="boolean" />
+        <attr name="map_bounds_padding" format="dimension" />
+        <attr name="marker_drawable" format="reference" />
+    </declare-styleable>
 </resources>
