@@ -15,9 +15,9 @@ import java.util.List;
 
 import static bikepack.bikepack.XmlUtils.readNext;
 
-class GpxFileParser extends AsyncTask< Void, Void, Void >
+public class GpxFileParser extends AsyncTask< Void, Void, Void >
 {
-    interface Listener
+    public interface Listener
     {
         void onGpxFileRead( Metadata metadata, List<GlobalPosition> trackpoints, List<NamedGlobalPosition> waypoints );
         void onGpxReadError( String errorMessage );
@@ -35,7 +35,7 @@ class GpxFileParser extends AsyncTask< Void, Void, Void >
     private List<NamedGlobalPosition> waypoints = new ArrayList<>();
     private Exception error = null;
 
-    GpxFileParser(@NonNull ContentResolver contentResolver, @NonNull Uri fileUri, @NonNull Listener listener )
+    public GpxFileParser(@NonNull ContentResolver contentResolver, @NonNull Uri fileUri, @NonNull Listener listener )
     {
         this.contentResolver = contentResolver;
         this.fileUri = fileUri;

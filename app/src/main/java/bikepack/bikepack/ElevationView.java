@@ -7,8 +7,10 @@ import android.databinding.DataBindingUtil;
 import android.support.annotation.NonNull;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.GestureDetector;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
+import android.view.View;
 import android.widget.RelativeLayout;
 
 import com.google.android.gms.maps.model.LatLng;
@@ -82,38 +84,101 @@ public class ElevationView extends RelativeLayout
 
     static private final String LOG_TAG = "ElevationView";
 
-    private final ElevationViewBinding binding;
+    private final ElevationViewBinding viewBinding;
     private ElevationData elevationData = null;
+
+    private MutableLiveData<List<Trackpoint>> selectionLiveData = new MutableLiveData<>();
     private MutableLiveData<Trackpoint> trackpointLiveData = new MutableLiveData<>();
 
     ElevationView(Context context, AttributeSet attrs) {
         super(context, attrs);
 
         LayoutInflater inflater = LayoutInflater.from(context);
-        binding = DataBindingUtil.inflate(inflater, R.layout.elevation_view, this, true);
+        viewBinding = DataBindingUtil.inflate(inflater, R.layout.elevation_view, this, true);
 
         setClickable(true);
         setLongClickable(true);
+
+        this.setOnTouchListener(new OnTouchListener() {
+            GestureDetector gestureDetector = new GestureDetector( new GestureDetector.SimpleOnGestureListener()
+            {
+                public void onLongPress( MotionEvent event )
+                {
+                    float leftX  = event.getX() - viewBinding.selectionView.getMinWidth()/2;
+                    float rightX = event.getX() + viewBinding.selectionView.getMinWidth()/2;
+                    onSelectionCreated( leftX, rightX );
+                }
+            } );
+
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                return gestureDetector.onTouchEvent(event);
+            }
+        });
     }
 
     LiveData<Trackpoint> getTrackpoint() { return trackpointLiveData; }
+    LiveData<List<Trackpoint>> getSelection() { return selectionLiveData; }
 
-    private void onTrackpointChanged( Trackpoint trackpoint )
+    void clearSelection()
     {
-        if (trackpoint == null)
-        {
-            this.binding.trackpointInfo.setVisibility(INVISIBLE);
-        }
-        else
-        {
-            this.binding.elevationText.setText( StringFormatter.formatDistance(trackpoint.elevation,true) );
-            this.binding.trackpointInfo.setVisibility(VISIBLE);
-        }
+        selectionLiveData.setValue(null);
 
-        trackpointLiveData.setValue(trackpoint);
+        viewBinding.selectionView.setVisibility(INVISIBLE);
+        viewBinding.selectionView.setEnabled(false);
+        viewBinding.selectionView.setListener(null);
     }
 
-    void drawTrackpoints(@NonNull final List<Trackpoint> trackpoints )
+    private void onTrackpointChanged( float pixelX )
+    {
+        try
+        {
+            Trackpoint trackpoint = elevationData.getTrackpoint(pixelX);
+            float distance = elevationData.getDistance(pixelX);
+
+            this.viewBinding.elevationText.setText( StringFormatter.formatDistance(trackpoint.elevation,true) );
+            this.viewBinding.distanceText.setText( StringFormatter.formatDistance(distance,false) );
+
+            this.viewBinding.touchMarker.setX(pixelX);
+            this.viewBinding.trackpointInfo.setVisibility(VISIBLE);
+            this.viewBinding.touchMarker.setVisibility(VISIBLE);
+
+            trackpointLiveData.setValue(trackpoint);
+        }
+        catch ( Exception e )
+        {
+            Log.e( LOG_TAG, "onTrackpointChanged: error=" + e.getMessage() );
+            onTrackpointReleased();
+        }
+    }
+
+    private void onTrackpointReleased()
+    {
+        this.viewBinding.trackpointInfo.setVisibility(INVISIBLE);
+        this.viewBinding.touchMarker.setVisibility(INVISIBLE);
+        trackpointLiveData.setValue(null);
+    }
+
+    void onSelectionCreated( float leftX, float rightX )
+    {
+        Log.i( LOG_TAG, "onSelectionCreated: left=" + leftX + " right=" + rightX );
+        if ( elevationData == null ) { Log.e( LOG_TAG, "onSelectionCreated: null elevationData"); return; }
+
+        selectionLiveData.setValue( elevationData.getTrackpointsBetween( leftX, rightX ) );
+
+        viewBinding.selectionView.updateBounds( leftX, rightX );
+        viewBinding.selectionView.setVisibility(VISIBLE);
+        viewBinding.selectionView.setEnabled(true);
+        viewBinding.selectionView.setListener(new SelectionView.Listener() {
+            public void onSelectionTouched(float pixelX) {
+                trackpointLiveData.setValue( elevationData.getTrackpoint(pixelX) ); }
+            public void onSelectionDoubleClicked(float leftX, float rightX) { }
+            public void onSelectionUpdated(float leftX, float rightX) {
+                selectionLiveData.setValue( elevationData.getTrackpointsBetween( leftX, rightX ) ); }
+        });
+    }
+
+    void setTrackpoints(@NonNull final List<Trackpoint> trackpoints )
     {
         Log.i( LOG_TAG, "drawTrackpoints size=" + trackpoints.size() );
 
@@ -124,7 +189,7 @@ public class ElevationView extends RelativeLayout
         try
         {
             elevationData = new ElevationData( trackpoints, canvasLeft, canvasWidth ); // TODO slow & blocks
-            binding.canvas.drawTrackpoints(trackpoints);
+            viewBinding.canvas.drawTrackpoints(trackpoints);
         }
         catch( Exception e )
         {
@@ -140,10 +205,10 @@ public class ElevationView extends RelativeLayout
             case MotionEvent.ACTION_MOVE:
             case MotionEvent.ACTION_DOWN:
                 if ( elevationData != null )
-                    onTrackpointChanged( elevationData.getTrackpoint(event.getX() ) );
+                    onTrackpointChanged( event.getX() );
                 return true;
             case MotionEvent.ACTION_UP:
-                onTrackpointChanged(null);
+                onTrackpointReleased();
                 return true;
         }
 

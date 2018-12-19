@@ -109,6 +109,14 @@
         android:progress="0"
         android:rotation="180" />
 
+    <Button
+        android:id="@+id/cancel_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_below="@id/write_load_bar"
+        android:text="@string/dialog_cancel"/>
+
 </RelativeLayout>
 
 </layout>

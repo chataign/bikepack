@@ -28,27 +28,35 @@ public class RouteListActivity extends AppCompatActivity
     private static final int ACTION_SELECT_ROUTE_FILE = 1;
     private static final String LOG_TAG = "RouteListActivity";
 
-    private RouteAdapter routesAdapter;
-    RouteListViewModel routesViewModel;
+    private RouteListAdapter routesAdapter;
+    private RouteListViewModel routesViewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.route_list_activity);
 
-        routesAdapter = new RouteAdapter( getApplicationContext(), new ArrayList<Route>() );
+        routesAdapter = new RouteListAdapter( getApplicationContext(), new ArrayList<Route>() );
+        routesViewModel = ViewModelProviders.of(this).get(RouteListViewModel.class);
+        routesViewModel.getRoutes().observe(this, new Observer<List<Route>>() {
+            @Override
+            public void onChanged(@Nullable List<Route> routes)
+            {
+                routesAdapter.clear();
+                if ( routes != null ) routesAdapter.addAll(routes);
+            }
+        } );
 
         ListView routeListView = findViewById(R.id.route_list);
         routeListView.setAdapter(routesAdapter);
         routeListView.setOnItemClickListener( new ListView.OnItemClickListener()
         {
             @Override
-            public void onItemClick( AdapterView<?> list, View view, int position, long id )
-            {
-            Route route = (Route) list.getItemAtPosition(position);
-            Intent intent = new Intent( RouteListActivity.this, RouteInfoActivity.class);
-            intent.putExtra( getString(R.string.route_extra), route );
-            startActivity(intent);
+            public void onItemClick( AdapterView<?> list, View view, int position, long id ) {
+                Route route = (Route) list.getItemAtPosition(position);
+                Intent intent = new Intent( RouteListActivity.this, RouteInfoActivity.class);
+                intent.putExtra( getString(R.string.route_extra), route );
+                startActivity(intent);
             }
         });
         routeListView.setOnItemLongClickListener( new ListView.OnItemLongClickListener()
@@ -72,16 +80,6 @@ public class RouteListActivity extends AppCompatActivity
             return true;
             }
         });
-
-        routesViewModel = ViewModelProviders.of(this).get(RouteListViewModel.class);
-        routesViewModel.getRoutes().observe(this, new Observer<List<Route>>() {
-            @Override
-            public void onChanged(@Nullable List<Route> routes)
-            {
-                routesAdapter.clear();
-                routesAdapter.addAll(routes);
-            }
-        } );
 
         FloatingActionButton addButton = findViewById(R.id.add_button);
         addButton.setOnClickListener(new View.OnClickListener()

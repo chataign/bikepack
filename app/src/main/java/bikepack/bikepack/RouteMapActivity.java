@@ -2,12 +2,16 @@ package bikepack.bikepack;
 
 import android.app.AlertDialog;
 import android.arch.lifecycle.Observer;
+import android.arch.lifecycle.ViewModelProvider;
 import android.arch.lifecycle.ViewModelProviders;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.databinding.DataBindingUtil;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.view.ActionMode;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -20,6 +24,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 
+import java.util.Arrays;
 import java.util.List;
 
 import bikepack.bikepack.databinding.RouteMapActivityBinding;
@@ -29,6 +34,9 @@ public class RouteMapActivity extends AppCompatActivity implements OnMapReadyCal
     private static final String LOG_TAG = "MapActivity";
     private static final String MAP_VIEW_BUNDLE_KEY = "MAP_VIEW_BUNDLE_KEY";
 
+    private static final RouteMapView.MapLayer ROUTE_LAYER = new RouteMapView.MapLayer(1, Color.RED,1);
+    private static final RouteMapView.MapLayer SELECTION_LAYER = new RouteMapView.MapLayer(2, Color.BLUE,2);
+
     private RouteMapActivityBinding binding;
     private GoogleMap googleMap = null;
 
@@ -36,6 +44,7 @@ public class RouteMapActivity extends AppCompatActivity implements OnMapReadyCal
     private MapTypeViewModel mapTypeViewModel=null;
     private TrackpointListViewModel trackpointsViewModel=null;
     private WaypointListViewModel waypointsViewModel=null;
+    private ActionMode selectionActionMode=null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -51,10 +60,6 @@ public class RouteMapActivity extends AppCompatActivity implements OnMapReadyCal
         binding = DataBindingUtil.setContentView(this, R.layout.route_map_activity);
         binding.mapView.onCreate(mapViewBundle);
         binding.mapView.getMapAsync(this);
-
-        mapTypeViewModel = ViewModelProviders.of(this).get(MapTypeViewModel.class);
-        waypointsViewModel = ViewModelProviders.of(this).get(WaypointListViewModel.class);
-        trackpointsViewModel = ViewModelProviders.of(this).get(TrackpointListViewModel.class);
     }
 
     @Override
@@ -63,12 +68,13 @@ public class RouteMapActivity extends AppCompatActivity implements OnMapReadyCal
         Log.i( LOG_TAG, "onMapReady" );
 
         Intent intent = getIntent();
-        Route route = intent.getParcelableExtra( getString(R.string.route_extra) );
+        final Route route = intent.getParcelableExtra( getString(R.string.route_extra) );
         if ( route == null ) { Log.e( LOG_TAG, "no route data" ); this.finish(); return; }
 
         this.googleMap = googleMap;
         googleMap.moveCamera( CameraUpdateFactory.newLatLngBounds( route.bounds,100 ) );
 
+        mapTypeViewModel = ViewModelProviders.of(this).get(MapTypeViewModel.class);
         mapTypeViewModel.init( getPreferences(MODE_PRIVATE),
                 getString(R.string.preferences_map_type),
                 getString(R.string.map_type_google_map) );
@@ -77,21 +83,45 @@ public class RouteMapActivity extends AppCompatActivity implements OnMapReadyCal
             public void onChanged(@Nullable String mapType) { binding.mapView.setMapType( mapType, getResources() ); }
         });
 
-        trackpointsViewModel.init(route.routeId);
+        ViewModelProvider.Factory trackpointModelFactory = new TrackpointListViewModel.Factory( this.getApplication(), route.routeId );
+        trackpointsViewModel = ViewModelProviders.of(this, trackpointModelFactory ).get(TrackpointListViewModel.class);
         trackpointsViewModel.getTrackpoints().observe(this, new Observer<List<Trackpoint>>() {
             public void onChanged( List<Trackpoint> trackpoints) {
-                binding.mapView.drawTrackpoints(trackpoints);
-                binding.elevationView.drawTrackpoints(trackpoints);
+                binding.mapView.clearLayer( ROUTE_LAYER );
+                binding.mapView.drawTrackpoints( ROUTE_LAYER, trackpoints, Color.RED );
+                binding.elevationView.setTrackpoints(trackpoints);
             }
         });
 
-        waypointsViewModel.init(route.routeId);
+        ViewModelProvider.Factory waypointModelFactory = new WaypointListViewModel.Factory( this.getApplication(), route.routeId );
+        waypointsViewModel = ViewModelProviders.of(this, waypointModelFactory).get(WaypointListViewModel.class);
         waypointsViewModel.getWaypoints().observe(this, new Observer<List<Waypoint>>() {
             public void onChanged( List<Waypoint> waypoints) { binding.mapView.drawWaypoints(waypoints); }
             } );
 
         binding.elevationView.getTrackpoint().observe(this, new Observer<Trackpoint>() {
             public void onChanged( Trackpoint trackpoint) { binding.mapView.setTouchTrackpoint(trackpoint); }
+        });
+
+        binding.elevationView.getSelection().observe(this, new Observer< List<Trackpoint> >() {
+            public void onChanged( List<Trackpoint> trackpoints) {
+                if ( trackpoints == null )
+                {
+                    if ( selectionActionMode != null ) { selectionActionMode.finish(); selectionActionMode=null; }
+                    binding.mapView.clearLayer( SELECTION_LAYER );
+                }
+                else
+                {
+                    if ( selectionActionMode == null ) selectionActionMode = startSupportActionMode(
+                            new RouteSelectionActionMode(RouteMapActivity.this, route,
+                                waypointsViewModel.getWaypoints(),
+                                binding.elevationView.getSelection(),
+                                new RouteSelectionActionMode.OnDestroyListener() {
+                                    public void onDestroyActionMode() { binding.elevationView.clearSelection(); }
+                                }) );
+
+                    binding.mapView.drawTrackpoints( SELECTION_LAYER, trackpoints, Color.BLUE ); }
+                }
         });
     }
 
@@ -146,30 +176,26 @@ public class RouteMapActivity extends AppCompatActivity implements OnMapReadyCal
                 return true;
 
             case R.id.action_select_layer:
-                RadioGroup radioGroup = (RadioGroup) getLayoutInflater().inflate(R.layout.map_types, null );
+                final String[] mapTypeNames = getResources().getStringArray(R.array.map_type_names);
+                final String currentMapType = mapTypeViewModel.getMapType().getValue();
+                final int checkedItem = Arrays.asList(mapTypeNames).indexOf(currentMapType);
 
                 final AlertDialog layerTypeDialog = new AlertDialog.Builder(this)
                         .setTitle(R.string.map_layer_dialog_title)
-                        .setView(radioGroup)
+                        .setSingleChoiceItems(R.array.map_type_names, checkedItem, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                mapTypeViewModel.setMapType( mapTypeNames[which] );
+                            }
+                        })
+                        .setNegativeButton(R.string.dialog_cancel, new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                mapTypeViewModel.setMapType( currentMapType );
+                            }
+                        })
+                        .setPositiveButton(R.string.dialog_ok, null)
                         .create();
-
-                final String[] mapTypes = getResources().getStringArray(R.array.map_type_names);
-                String currentMapType = mapTypeViewModel.getMapType().getValue();
-
-                for ( final String mapType : mapTypes )
-                {
-                    RadioButton radioButton = (RadioButton) getLayoutInflater().inflate(R.layout.map_types_button, null );
-                    radioButton.setText(mapType);
-                    radioButton.setChecked( mapType.equals(currentMapType) );
-                    radioButton.setOnClickListener( new RadioButton.OnClickListener() {
-                        public void onClick(View view)
-                        {
-                            mapTypeViewModel.setMapType(mapType);
-                            layerTypeDialog.dismiss();
-                        }
-                    } );
-                    radioGroup.addView(radioButton);
-                }
 
                 layerTypeDialog.show();
                 return true;

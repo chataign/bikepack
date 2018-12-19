@@ -1,4 +1,4 @@
-package Queries;
+package bikepack.bikepack;
 
 import android.os.AsyncTask;
 import android.util.Log;

@@ -73,16 +73,6 @@ class XmlUtils
             if ( child != null ) return child;
             throw new NoSuchFieldException("XML object="+this.tag+" has no child with tag="+tag);
         }
-
-        String toString( int numTabs )
-        {
-            StringBuilder str = new StringBuilder("\n");
-            for ( int i=0; i< numTabs; ++i ) str.append("> ");
-            str.append(String.format("XmlObject[%s]=%s", tag, value));
-            for ( XmlAttribute attribute : attributes.values() ) str.append(attribute.toString());
-            for ( XmlObject child : children.values() ) str.append(child.toString(numTabs + 1));
-            return str.toString();
-        }
     }
 
     static XmlObject readNext( XmlPullParser xml ) throws XmlPullParserException, IOException

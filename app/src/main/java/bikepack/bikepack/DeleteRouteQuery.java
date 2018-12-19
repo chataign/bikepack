@@ -1,11 +1,8 @@
-package Queries;
+package bikepack.bikepack;
 
 import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.util.Log;
-
-import bikepack.bikepack.AppDatabase;
-import bikepack.bikepack.Route;
 
 public class DeleteRouteQuery extends AsyncTask< Void, Void, Void >
 {

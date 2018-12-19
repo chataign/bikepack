@@ -13,11 +13,9 @@ import java.util.List;
 
 import bikepack.bikepack.databinding.RouteListItemBinding;
 
-class RouteAdapter extends ArrayAdapter<Route>
+public class RouteListAdapter extends ArrayAdapter<Route>
 {
-    private RouteListItemBinding listItem=null;
-
-    RouteAdapter(@NonNull Context context, @NonNull List<Route> routes )
+    public RouteListAdapter(@NonNull Context context, @NonNull List<Route> routes )
     {
         super( context, 0 , routes );
     }
@@ -27,15 +25,14 @@ class RouteAdapter extends ArrayAdapter<Route>
     public View getView(int position, @Nullable View view, @NonNull ViewGroup parent)
     {
         if( view == null )
-        {
-            view = LayoutInflater.from(getContext()).inflate( R.layout.route_list_item, parent,false);
-            listItem = DataBindingUtil.bind(view);
-        }
+            view = LayoutInflater.from(getContext()).inflate(
+                    R.layout.route_list_item, parent,false);
 
         Route route = getItem(position);
 
         if ( route != null )
         {
+            RouteListItemBinding listItem = DataBindingUtil.bind(view);
             listItem.routeName.setText( route.routeName );
             listItem.authorName.setText( route.authorName );
             listItem.routeInfo.setText( StringFormatter.formatDistance(route.totalDistance,false) );

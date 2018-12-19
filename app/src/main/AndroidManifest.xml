@@ -46,6 +46,14 @@
         <activity android:name=".RouteInfoActivity"
             android:label="@string/title_activity_route_info"/>
 
+        <activity android:name=".RouteInfoActivity"
+            android:label="@string/title_activity_route_info"/>
+
+        <activity android:name=".DownloadMapActivity"
+            android:label="@string/title_activity_download_map"
+            android:theme="@style/Theme.AppCompat.Light.Dialog.Alert"
+            android:excludeFromRecents="true"/>
+
     </application>
 
 </manifest>

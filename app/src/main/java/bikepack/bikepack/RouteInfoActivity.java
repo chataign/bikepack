@@ -32,8 +32,14 @@ public class RouteInfoActivity extends AppCompatActivity
         binding = DataBindingUtil.setContentView( this, R.layout.route_info_activity );
 
         Intent intent = getIntent();
-        Route routeIn = intent.getParcelableExtra( getString(R.string.route_extra) );
-        if ( routeIn == null ) { Log.e( LOG_TAG, "route input is null" ); this.finish(); return; }
+        Route routeIn = null;
+
+        if ( intent == null || ( routeIn = intent.getParcelableExtra( getString(R.string.route_extra) ) ) == null )
+        {
+            Log.e( LOG_TAG, "route input is null" );
+            finish();
+            return;
+        }
 
         routeViewModel = ViewModelProviders.of(this).get(RouteViewModel.class);
         routeViewModel.init( routeIn.routeId);

@@ -11,8 +11,6 @@ import android.content.Context;
 
 public abstract class AppDatabase extends RoomDatabase
 {
-    static final String DB_NAME = "app_db";
-
     public abstract Route.DatabaseAccess routes();
     public abstract Trackpoint.DatabaseAccess trackpoints();
     public abstract Waypoint.DatabaseAccess waypoints();
@@ -23,7 +21,8 @@ public abstract class AppDatabase extends RoomDatabase
     {
         if ( INSTANCE == null )
         {
-            INSTANCE = Room.databaseBuilder(context.getApplicationContext(), AppDatabase.class, AppDatabase.DB_NAME)
+            INSTANCE = Room.databaseBuilder(context.getApplicationContext(), AppDatabase.class,
+                    context.getString(R.string.app_database))
                 .fallbackToDestructiveMigration()
                 .build();
         }

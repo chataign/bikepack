@@ -25,25 +25,25 @@ public class Route implements Parcelable
 {
     @PrimaryKey(autoGenerate = true)
     public int routeId;
-    final String routeName;
-    final String authorName;
-    final String authorLink;
-    final Date dateCreated;
-    final Date dateAdded;
-    final float totalDistance;
-    final float totalAscent;
-    final float totalDescent;
-    final float highestElevation;
-    final float lowestElevation;
-    final int numTrackpoints;
-    final int numWaypoints;
+    public final String routeName;
+    public final String authorName;
+    public final String authorLink;
+    public final Date dateCreated;
+    public final Date dateAdded;
+    public final float totalDistance;
+    public final float totalAscent;
+    public final float totalDescent;
+    public final float highestElevation;
+    public final float lowestElevation;
+    public final int numTrackpoints;
+    public final int numWaypoints;
     final double latitudeNE;
     final double longitudeNE;
     final double latitudeSW;
     final double longitudeSW;
 
     @Ignore
-    final LatLngBounds bounds;
+    public final LatLngBounds bounds;
 
     @Override
     public String toString()

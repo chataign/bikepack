@@ -9,7 +9,7 @@
         android:alpha="0.9">
 
         <bikepack.bikepack.ElevationCanvas
-            android:id="@+id/plot"
+            android:id="@+id/canvas"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:background="@android:color/white"
@@ -17,63 +17,66 @@
             app:line_color="@color/red"
             app:line_width="5"/>
 
-        <TextView
-            android:id="@+id/elevation_label"
-            android:layout_alignParentLeft="true"
-            android:layout_alignParentTop="true"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:paddingLeft="5pt"
-            android:paddingTop="5pt"
-            android:textColor="@android:color/black"
-            android:textSize="6pt"
-            android:text="Elevation"
-            android:visibility="gone"/>
-
-        <TextView
-            android:id="@+id/elevation_text"
-            android:layout_below="@id/elevation_label"
-            android:layout_alignLeft="@id/elevation_label"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="@android:color/black"
-            android:textSize="6pt"
-            android:paddingLeft="5pt"
-            android:visibility="gone"/>
-
-        <TextView
-            android:id="@+id/distance_label"
-            android:layout_alignParentRight="true"
-            android:layout_alignParentTop="true"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="@android:color/black"
-            android:textSize="6pt"
-            android:paddingTop="5pt"
-            android:paddingRight="5pt"
-            android:text="Distance"
-            android:visibility="invisible"/>
-
-        <TextView
-            android:id="@+id/distance_text"
-            android:layout_below="@id/distance_label"
-            android:layout_alignRight="@id/distance_label"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="@android:color/black"
-            android:textSize="6pt"
-            android:paddingRight="5pt"
-            android:visibility="invisible"/>
-
-        <ImageView
-            android:id="@+id/touch_marker"
-            android:src="@drawable/plot_marker"
-            android:alpha="1"
-            android:layout_centerHorizontal="true"
-            android:layout_centerVertical="true"
-            android:layout_width="wrap_content"
+        <RelativeLayout
+            android:id="@+id/trackpoint_info"
+            android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:visibility="invisible" />
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/elevation_label"
+                android:layout_alignParentLeft="true"
+                android:layout_alignParentTop="true"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingLeft="5pt"
+                android:paddingTop="5pt"
+                android:textColor="@android:color/black"
+                android:textSize="6pt"
+                android:text="Elevation"/>
+
+            <TextView
+                android:id="@+id/elevation_text"
+                android:layout_below="@id/elevation_label"
+                android:layout_alignLeft="@id/elevation_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@android:color/black"
+                android:textSize="6pt"
+                android:paddingLeft="5pt"/>
+
+            <TextView
+                android:id="@+id/distance_label"
+                android:layout_alignParentRight="true"
+                android:layout_alignParentTop="true"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@android:color/black"
+                android:textSize="6pt"
+                android:paddingTop="5pt"
+                android:paddingRight="5pt"
+                android:text="Distance"/>
+
+            <TextView
+                android:id="@+id/distance_text"
+                android:layout_below="@id/distance_label"
+                android:layout_alignRight="@id/distance_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@android:color/black"
+                android:textSize="6pt"
+                android:paddingRight="5pt" />
+
+            <ImageView
+                android:id="@+id/touch_marker"
+                android:src="@drawable/plot_marker"
+                android:alpha="1"
+                android:layout_centerHorizontal="true"
+                android:layout_centerVertical="true"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent" />
+
+        </RelativeLayout>
 
         <bikepack.bikepack.SelectionView
             android:id="@+id/selection_view"

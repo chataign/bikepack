@@ -14,13 +14,13 @@
         android:layout_height="match_parent"
         android:layout_weight="3">
 
-        <com.google.android.gms.maps.MapView
+        <bikepack.bikepack.RouteMapView
             android:id="@+id/map_view"
             android:layout_width="fill_parent"
             android:layout_height="fill_parent"/>
 
         <ImageView
-            android:id="@+id/waypoint_marker"
+            android:id="@+id/new_waypoint_marker"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"

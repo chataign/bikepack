@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.databinding.DataBindingUtil;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.GestureDetector;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -27,7 +26,7 @@ public class SelectionView extends RelativeLayout
     private final static float DEFAULT_MIN_WIDTH = 100;
 
     private final SelectionViewBinding binding;
-    private float left =0, right =0;
+    private float left=0, right=0;
     private Listener listener = null;
     private final float minWidth;
     private boolean updating=false;
@@ -50,7 +49,6 @@ public class SelectionView extends RelativeLayout
             {
                 public boolean onDoubleTapEvent(MotionEvent e)
                 {
-                    //Log.i( LOG_TAG, "onDoubleTapEvent" );
                     if ( listener == null ) return false;
                     listener.onSelectionDoubleClicked(left, right);
                     return true;
@@ -59,7 +57,8 @@ public class SelectionView extends RelativeLayout
 
             public boolean onTouch( View view, MotionEvent event )
             {
-                return gestureDetector.onTouchEvent(event);
+                gestureDetector.onTouchEvent(event);
+                return false; // trigger touch for underlying views
             }
         } );
 
@@ -80,7 +79,7 @@ public class SelectionView extends RelativeLayout
                         if ( listener != null ) listener.onSelectionTouched(newLeft);
                         updateBounds( newLeft, right);
                         updating=true;
-                        return true;
+                        return false;// trigger touch for underlying views
                     case MotionEvent.ACTION_UP:
                         if ( updating && listener != null ) listener.onSelectionUpdated(left, right);
                         updating=false;
@@ -108,7 +107,7 @@ public class SelectionView extends RelativeLayout
                         if ( listener != null ) listener.onSelectionTouched(newRight);
                         updateBounds(left, newRight );
                         updating=true;
-                        return true;
+                        return false;// trigger touch for underlying views
                     case MotionEvent.ACTION_UP:
                         if ( updating && listener != null ) listener.onSelectionUpdated(left, right);
                         updating=false;

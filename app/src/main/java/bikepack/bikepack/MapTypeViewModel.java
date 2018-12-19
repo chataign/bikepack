@@ -17,12 +17,12 @@ public class MapTypeViewModel extends AndroidViewModel
     private String mapTypeKey;
     private MutableLiveData<String> mapType = new MutableLiveData<>();
 
-    MapTypeViewModel(Application application )
+    public MapTypeViewModel(Application application )
     {
         super(application);
     }
 
-    void init( SharedPreferences preferences, String mapTypeKey, String defaultMapType )
+    public void init( SharedPreferences preferences, String mapTypeKey, String defaultMapType )
     {
         this.preferences = preferences;
         this.mapTypeKey = mapTypeKey;
@@ -30,9 +30,9 @@ public class MapTypeViewModel extends AndroidViewModel
         mapType.setValue( preferences.getString( mapTypeKey, defaultMapType ) );
     }
 
-    LiveData<String> getMapType() { return mapType; }
+    public LiveData<String> getMapType() { return mapType; }
 
-    void setMapType( String newMapType )
+    public void setMapType( String newMapType )
     {
         preferences.edit().putString( mapTypeKey, newMapType ).apply();
         mapType.setValue(newMapType);

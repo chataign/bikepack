@@ -11,7 +11,7 @@ import java.util.List;
 
 import bikepack.bikepack.databinding.RouteInfoItemBinding;
 
-class RouteInfoItem
+public class RouteInfoItem
 {
     private static DateFormat DATE_FORMAT = new SimpleDateFormat("dd/MM/yy");
 
@@ -19,14 +19,14 @@ class RouteInfoItem
     final String value;
     final int iconResId;
 
-    RouteInfoItem( String label, String value, int iconResId )
+    public RouteInfoItem( String label, String value, int iconResId )
     {
         this.label = label;
         this.value = value;
         this.iconResId = iconResId;
     }
 
-    View getView( LayoutInflater inflater )
+    public View getView( LayoutInflater inflater )
     {
         View view = inflater.inflate( R.layout.route_info_item, null );
         RouteInfoItemBinding binding = DataBindingUtil.bind(view);
@@ -38,7 +38,7 @@ class RouteInfoItem
         return view;
     }
 
-    static List<RouteInfoItem> createRouteItems( Route route )
+    public static List<RouteInfoItem> createRouteItems( Route route )
     {
         String totalDistance = StringFormatter.formatDistance(route.totalDistance,false);
         String totalAscent = StringFormatter.formatDistance(route.totalAscent,true);

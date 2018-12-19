@@ -1,18 +1,10 @@
-package Queries;
+package bikepack.bikepack;
 
 import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
 import java.util.List;
-
-import bikepack.bikepack.AppDatabase;
-import bikepack.bikepack.GlobalPosition;
-import bikepack.bikepack.Metadata;
-import bikepack.bikepack.NamedGlobalPosition;
-import bikepack.bikepack.Route;
-import bikepack.bikepack.Trackpoint;
-import bikepack.bikepack.Waypoint;
 
 public class CreateRouteQuery extends AsyncTask< Void, Void, Route>
 {
@@ -34,8 +26,8 @@ public class CreateRouteQuery extends AsyncTask< Void, Void, Route>
     public CreateRouteQuery(@NonNull AppDatabase database,
                      @NonNull Metadata metadata,
                      @NonNull List<GlobalPosition> trackpoints,
-                     @NonNull List<NamedGlobalPosition> waypoints,
-                     @NonNull Listener listener )
+                     List<NamedGlobalPosition> waypoints,
+                     Listener listener )
     {
         this.database = database;
         this.metadata = metadata;
@@ -52,6 +44,7 @@ public class CreateRouteQuery extends AsyncTask< Void, Void, Route>
         {
             Route existingRoute = database.routes().find( metadata.routeName, metadata.authorName );
             if ( existingRoute != null ) throw new Exception("Route already exists");
+            if ( trackpoints == null ) throw new Exception("null trackpoints");
 
             Route route = Route.buildFromData(metadata,trackpoints,waypoints);
             route.routeId = (int) database.routes().insert(route);
@@ -63,12 +56,15 @@ public class CreateRouteQuery extends AsyncTask< Void, Void, Route>
             Log.i("CreateRouteQuery", String.format("inserting %d trackpoints...", trackpoints.size()));
             database.trackpoints().insert(dbTrackpoints);
 
-            Waypoint dbWaypoints[] = new Waypoint[waypoints.size()];
-            for (int i = 0; i < dbWaypoints.length; ++i)
-                dbWaypoints[i] = new Waypoint( route.routeId, waypoints.get(i) );
+            if ( waypoints != null )
+            {
+                Waypoint dbWaypoints[] = new Waypoint[waypoints.size()];
+                for (int i = 0; i < dbWaypoints.length; ++i)
+                    dbWaypoints[i] = new Waypoint( route.routeId, waypoints.get(i) );
 
-            Log.i("CreateRouteQuery", String.format("inserting %d waypoints...", waypoints.size()));
-            database.waypoints().insert(dbWaypoints);
+                Log.i("CreateRouteQuery", String.format("inserting %d waypoints...", waypoints.size()));
+                database.waypoints().insert(dbWaypoints);
+            }
 
             final long endTime = System.currentTimeMillis();
             Log.i( LOG_TAG, String.format( "CreateRouteTask: executed in %dms", endTime-startTime ) );

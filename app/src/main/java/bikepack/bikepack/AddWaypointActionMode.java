@@ -27,9 +27,10 @@ public class AddWaypointActionMode implements ActionMode.Callback
 
     private int originalStatusBarColor;
     private final int actionModeStatusBarColor;
+    private CharSequence originalTitle;
     private Marker waypointMarker;
 
-    AddWaypointActionMode(final AppCompatActivity activity, final GoogleMap googleMap, WaypointListViewModel waypoints )
+    public AddWaypointActionMode(final AppCompatActivity activity, final GoogleMap googleMap, WaypointListViewModel waypoints )
     {
         this.activity = activity;
         this.googleMap = googleMap;
@@ -46,6 +47,9 @@ public class AddWaypointActionMode implements ActionMode.Callback
             // set the status bar color to black to match the action mode bar
             originalStatusBarColor = activity.getWindow().getStatusBarColor();
             activity.getWindow().setStatusBarColor(actionModeStatusBarColor);
+
+            originalTitle = mode.getTitle();
+            mode.setTitle(R.string.add_waypoint_mode_title);
         }
 
         MenuInflater menuInflater = activity.getMenuInflater();
@@ -117,6 +121,8 @@ public class AddWaypointActionMode implements ActionMode.Callback
         // set status bar back to its original color
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
             activity.getWindow().setStatusBarColor(originalStatusBarColor);
+
+        mode.setTitle(originalTitle);
 
         // clear the googleMap
         waypointMarker.remove();

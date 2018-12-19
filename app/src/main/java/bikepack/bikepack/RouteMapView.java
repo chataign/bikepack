@@ -24,19 +24,43 @@ import com.google.android.gms.maps.model.TileOverlay;
 import com.google.android.gms.maps.model.TileOverlayOptions;
 import com.google.android.gms.maps.model.TileProvider;
 
+import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class RouteMapView extends MapView implements OnMapReadyCallback
 {
-    private static final String LOG_TAG = "RouteMapView";
+    public static class MapLayer
+    {
+        final int id;
+        final int color;
+        final int zindex;
 
+        public MapLayer( int id, int color, int zindex )
+        {
+            this.id = id;
+            this.color = color;
+            this.zindex = zindex;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+
+            if (o == this) return true;
+            if (!(o instanceof MapLayer)) return false;
+            return ((MapLayer)o).id == this.id;
+        }
+    };
+
+    private static final String LOG_TAG = "RouteMapView";
     private OnMapReadyCallback listener = null;
 
+    private final File mapTilesDirectory;
     private GoogleMap googleMap;
     private TileOverlay tileOverlay = null;
     private Marker mapTouchedMarker = null;
-    private Polyline routePolyline = null;
+    private HashMap<MapLayer,Polyline> polylines = new HashMap<>();
     private List<Marker> waypointMarkers = new ArrayList<>();
 
     private final boolean mapToolbarEnabled;
@@ -48,6 +72,10 @@ public class RouteMapView extends MapView implements OnMapReadyCallback
     RouteMapView(Context context, AttributeSet attrs)
     {
         super(context, attrs);
+
+        mapTilesDirectory = new File( context.getFilesDir(),
+                context.getResources().getString(R.string.map_tiles_directory) );
+        mapTilesDirectory.mkdirs();
 
         TypedArray attributes = context.getTheme().obtainStyledAttributes(
                 attrs, R.styleable.RouteMapView,0, 0);
@@ -89,7 +117,7 @@ public class RouteMapView extends MapView implements OnMapReadyCallback
         if ( listener != null ) listener.onMapReady(googleMap);
     }
 
-    void setTouchTrackpoint( final Trackpoint trackpoint )
+    public void setTouchTrackpoint( final Trackpoint trackpoint )
     {
         if ( trackpoint == null )
         {
@@ -102,19 +130,36 @@ public class RouteMapView extends MapView implements OnMapReadyCallback
         }
     }
 
-    void drawTrackpoints( final List<Trackpoint> trackpoints )
+    public void drawTrackpoints( MapLayer layer, final List<Trackpoint> trackpoints, int color )
     {
-        PolylineOptions polylineOptions = new PolylineOptions().color(Color.RED);
-        for ( Trackpoint trackpoint : trackpoints ) polylineOptions.add(trackpoint.latlng);
+        Polyline polyline = polylines.get(layer);
+        if ( polyline != null ) polyline.remove();
 
-        if ( routePolyline != null ) routePolyline.remove();
-        routePolyline = googleMap.addPolyline(polylineOptions);
+        if ( trackpoints == null )
+        {
+            polylines.remove(layer);
+        }
+        else
+        {
+            PolylineOptions polylineOptions = new PolylineOptions().color(layer.color).zIndex(layer.zindex);
+            for ( Trackpoint trackpoint : trackpoints ) polylineOptions.add(trackpoint.latlng);
+            polylines.put( layer, googleMap.addPolyline(polylineOptions) );
+        }
     }
 
-    void drawWaypoints( final List<Waypoint> waypoints )
+    public void clearLayer( MapLayer layer )
+    {
+        Polyline polyline = polylines.get(layer);
+        if ( polyline != null ) polyline.remove();
+    }
+
+    public void drawWaypoints( final List<Waypoint> waypoints )
     {
         for ( Marker marker : waypointMarkers ) marker.remove();
         waypointMarkers.clear();
+
+        if ( waypoints == null )
+            return;
 
         for ( Waypoint waypoint : waypoints )
         {
@@ -137,7 +182,7 @@ public class RouteMapView extends MapView implements OnMapReadyCallback
         return BitmapDescriptorFactory.fromBitmap(bitmap);
     }
 
-    void setMapType(String mapType, Resources resources)
+    public void setMapType(String mapType, Resources resources)
     {
         Log.i( LOG_TAG, "setting map type=" + mapType );
 
@@ -174,16 +219,16 @@ public class RouteMapView extends MapView implements OnMapReadyCallback
         {
             googleMap.setMapType(GoogleMap.MAP_TYPE_NONE);
 
-            TileProvider tileProvider = new OfflineTileProvider(
-                    resources.getString(R.string.map_type_osm_street), resources.getString(R.string.osm_street_base_url), false );
+            TileProvider tileProvider = new OfflineTileProvider( mapTilesDirectory,
+                    resources.getString(R.string.map_type_osm_street), resources.getString(R.string.osm_street_base_url), true );
             tileOverlay = googleMap.addTileOverlay( new TileOverlayOptions().tileProvider(tileProvider) );
         }
         else if ( mapType.equals( resources.getString(R.string.map_type_osm_cycle) ) )
         {
             googleMap.setMapType(GoogleMap.MAP_TYPE_NONE);
 
-            TileProvider tileProvider = new OfflineTileProvider(
-                    resources.getString(R.string.map_type_osm_cycle), resources.getString(R.string.osm_cycle_base_url), false );
+            TileProvider tileProvider = new OfflineTileProvider( mapTilesDirectory,
+                    resources.getString(R.string.map_type_osm_cycle), resources.getString(R.string.osm_cycle_base_url), true );
             tileOverlay = googleMap.addTileOverlay( new TileOverlayOptions().tileProvider(tileProvider) );
         }
         else

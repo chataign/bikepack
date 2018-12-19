@@ -1,7 +1,9 @@
 <resources>
     <string name="app_name">Bikepack</string>
+    <string name="app_database">bikepack_database</string>
 
     <string name="preferences_map_type">map_type</string>
+    <string name="map_tiles_directory">downloaded-map-tiles</string>
 
     <string name="title_activity_home">My routes</string>
     <string name="title_activity_route_map">Route map</string>
@@ -20,6 +22,9 @@
     <string name="route_import_dialog_title">Importing route</string>
     <string name="route_import_dialog_parse_gpx">Parsing GPX file…</string>
     <string name="route_import_dialog_write_db">Writing to database…</string>
+
+    <string name="add_waypoint_mode_title">Add waypoint</string>
+    <string name="selection_mode_title">Route selection</string>
 
     <string name="route_delete_dialog_title">Delete this route?</string>
     <string name="route_delete_dialog_message">This route will be permanently removed from your library.</string>

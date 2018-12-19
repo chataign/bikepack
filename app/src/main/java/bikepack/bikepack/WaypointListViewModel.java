@@ -3,38 +3,46 @@ package bikepack.bikepack;
 import android.app.Application;
 import android.arch.lifecycle.AndroidViewModel;
 import android.arch.lifecycle.LiveData;
-import android.os.AsyncTask;
-import android.support.annotation.NonNull;
-
-import com.google.android.gms.maps.model.LatLng;
+import android.arch.lifecycle.ViewModel;
+import android.arch.lifecycle.ViewModelProvider;
 
 import java.util.List;
 
-import Queries.CreateRouteQuery;
-import Queries.DeleteRouteQuery;
-import Queries.InsertWaypointQuery;
-
 public class WaypointListViewModel extends AndroidViewModel
 {
-    private AppDatabase database;
-    private int routeId;
-    private LiveData< List<Waypoint> > waypoints;
+    static public class Factory implements ViewModelProvider.Factory {
+        private final Application application;
+        private final int routeId;
 
-    WaypointListViewModel(Application application )
-    {
-        super(application);
-        database = AppDatabase.getInstance(application);
+
+        public Factory(Application application, int routeId) {
+            this.application = application;
+            this.routeId = routeId;
+        }
+
+        @Override
+        public <T extends ViewModel> T create(Class<T> modelClass) {
+            return (T) new WaypointListViewModel( application, routeId );
+        }
     }
 
-    void init( int routeId )
+    private final AppDatabase database;
+    private final int routeId;
+    private LiveData< List<Waypoint> > waypoints;
+
+    public WaypointListViewModel(Application application, int routeId )
     {
+        super(application);
+
+        this.database = AppDatabase.getInstance(application);
         this.routeId = routeId;
+
         waypoints = database.waypoints().getByRouteId(routeId);
     }
 
-    LiveData< List<Waypoint> > getWaypoints() { return waypoints; }
+    public LiveData< List<Waypoint> > getWaypoints() { return waypoints; }
 
-    void createWaypoint( NamedGlobalPosition waypointData )
+    public void createWaypoint( NamedGlobalPosition waypointData )
     {
         new InsertWaypointQuery( database, new Waypoint( routeId, waypointData ), null ).execute();
     }

@@ -3,14 +3,14 @@ package bikepack.bikepack;
 import android.app.Application;
 import android.arch.lifecycle.AndroidViewModel;
 import android.arch.lifecycle.LiveData;
+import android.util.Log;
 
 import java.util.List;
 
-import Queries.CreateRouteQuery;
-import Queries.DeleteRouteQuery;
-
 public class RouteListViewModel extends AndroidViewModel
 {
+    private static final String LOG_TAG = "RouteListViewModel";
+
     private AppDatabase database;
     private LiveData<List<Route>> routes;
 
@@ -21,16 +21,17 @@ public class RouteListViewModel extends AndroidViewModel
         routes = database.routes().getAll();
     }
 
-    LiveData< List<Route> > getRoutes() { return routes; }
+    public LiveData< List<Route> > getRoutes() { return routes; }
 
-    void createRoute( final Metadata metadata,
+    public void createRoute( final Metadata metadata,
                       final List<GlobalPosition> trackpoints,
                       final List<NamedGlobalPosition> waypoints ) {
         new CreateRouteQuery( database, metadata, trackpoints, waypoints, null ).execute();
     }
 
-    void deleteRoute( Route route )
+    public void deleteRoute( Route route )
     {
+        Log.i( LOG_TAG, "deleting route=" + route.routeName );
         new DeleteRouteQuery( database, route, null ).execute();
     }
 }
